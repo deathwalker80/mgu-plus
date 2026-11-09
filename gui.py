@@ -22,7 +22,7 @@ import urllib.request
 import webbrowser
 
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import messagebox, ttk
 
 if getattr(sys, "frozen", False):
     HERE = os.path.dirname(os.path.abspath(sys.executable))
@@ -59,7 +59,7 @@ from mgu7 import store as store_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
@@ -178,7 +178,6 @@ class App:
         self.mgu_ip = tk.StringVar()
         self.arch = tk.StringVar(value="")  # vuota finché l'utente non sceglie la variante
         self.variant_label = tk.StringVar(value=VARIANT_PROMPT)
-        self.key_path = tk.StringVar()
         self.disable_debug = tk.BooleanVar(value=True)
         self.unique_key = tk.BooleanVar(value=False)
 
@@ -401,24 +400,8 @@ class App:
 
     def _build_ssh_card(self, parent):
         card = self._card(parent, 2, "Accesso SSH MGU")
-        keyrow = tk.Frame(card.body, bg=SURFACE)
-        keyrow.pack(fill="x")
-        tk.Label(keyrow, text="Chiave SSH root (facoltativa)", bg=SURFACE, fg=MUTED, font=(FONT, 9),
-                 anchor="w").pack(side="left", padx=(0, 10))
-        self.key_entry = ttk.Entry(keyrow, textvariable=self.key_path, font=(MONO, 9))
-        self.key_entry.pack(side="left", fill="x", expand=True)
-        self.btn_key_default = ttk.Button(keyrow, text="Predefinita", style="Small.TButton",
-                                          command=lambda: self.key_path.set(""))
-        self.btn_key_default.pack(side="right", padx=(6, 0))
-        self.btn_key_browse = ttk.Button(keyrow, text="Sfoglia…", style="Small.TButton", command=self.browse_key)
-        self.btn_key_browse.pack(side="right", padx=(6, 0))
-        tk.Label(card.body, text="Lasciala vuota: il programma usa da solo la chiave giusta (quella del flash, salvata "
-                 "in data\\enrollments). Serve solo per una chiave creata da un altro PC o con la chiave unica.",
-                 bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w", justify="left",
-                 wraplength=580).pack(fill="x")
-
         opts = tk.Frame(card.body, bg=SURFACE)
-        opts.pack(fill="x", pady=(4, 0))
+        opts.pack(fill="x")
         ttk.Checkbutton(opts, text="SSH persistente con modalità debug spenta (consigliato)",
                         variable=self.disable_debug, style="Dark.TCheckbutton").pack(side="left")
         ttk.Checkbutton(opts, text="Chiave unica per l'auto (avanzato)", variable=self.unique_key,
@@ -592,7 +575,7 @@ class App:
     def _action_buttons(self):
         return [self.btn_check, self.detect_btn, self.btn_flash, self.btn_enable, self.btn_fix,
                 self.btn_backup, self.btn_disable, self.btn_store, self.btn_versions, self.btn_restart,
-                self.btn_remove, self.btn_github, self.btn_update, self.btn_key_browse, self.btn_key_default]
+                self.btn_remove, self.btn_github, self.btn_update]
 
     def _busy(self, on, text=None):
         self._is_busy = on
@@ -618,8 +601,6 @@ class App:
             args += ["--gateway", self.gateway.get().strip()]
         if self.mgu_ip.get().strip():
             args += ["--mgu-ip", self.mgu_ip.get().strip()]
-        if self.key_path.get().strip():
-            args += ["--key", self.key_path.get().strip()]
         if self.arch.get() in ARCHES:
             args += ["--arch", self.arch.get()]
         return args
@@ -771,14 +752,6 @@ class App:
             args.append("--keep-debug")
         args.append("--unique-key" if self.unique_key.get() else "--no-unique-key")
         return args
-
-    def browse_key(self):
-        path = filedialog.askopenfilename(
-            title="Chiave privata SSH root",
-            initialdir=os.path.join(HERE, "data", "enrollments"),
-            filetypes=(("Chiavi private", "*.pem *id_rsa* *.key"), ("Tutti i file", "*.*")))
-        if path:
-            self.key_path.set(os.path.normpath(path))
 
     def do_check(self):
         """Legge vettura, root SSH e versioni dello Store (non modifica nulla)."""

@@ -143,12 +143,11 @@ class GuiTests(unittest.TestCase):
     def test_buttons_send_the_right_actions(self):
         app = self.app
         app.vin.set('TESTVIN1234567890')
-        app.key_path.set('C:\\chiavi\\id_rsa')
         with patch.object(app, '_run') as run, patch.object(gui.messagebox, 'askyesno', return_value=True), \
                 patch.object(gui.messagebox, 'showerror') as error:
             app.do_check()
             self.assertEqual(run.call_args.args[0], ['check', '--yes', '--vin', 'TESTVIN1234567890', '--gateway',
-                                                     'auto', '--key', 'C:\\chiavi\\id_rsa'])
+                                                     'auto'])
             app.do_enable()
             self.assertEqual(run.call_args.args[0][:4], ['enable', '--persist', '--no-unique-key', '--yes'])
             run.reset_mock()
@@ -303,9 +302,9 @@ class ProgramUpdateTests(unittest.TestCase):
     def test_outcomes(self):
         self.assertEqual(gui.UPDATE_API, 'https://api.github.com/repos/deathwalker80/mgu-plus/releases/latest')
         with self.fake({'tag_name': 'v1.3.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.1'), ('newer', '1.3.0', 'https://example/r', None))
-        with self.fake({'tag_name': 'v1.2.1', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.1')[0], 'current')
+            self.assertEqual(gui.check_program_update(current='1.2.2'), ('newer', '1.3.0', 'https://example/r', None))
+        with self.fake({'tag_name': 'v1.2.2', 'html_url': 'https://example/r'}):
+            self.assertEqual(gui.check_program_update(current='1.2.2')[0], 'current')
         with self.fake(error=gui.urllib.error.HTTPError('u', 404, 'Not Found', {}, None)):
             self.assertEqual(gui.check_program_update()[0], 'none')
         with self.fake(error=gui.urllib.error.URLError('offline')):

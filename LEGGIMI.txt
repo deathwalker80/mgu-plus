@@ -1,4 +1,4 @@
-﻿MGU Plus  -  versione 1.2.1
+﻿MGU Plus  -  versione 1.2.2
 ===========================
 
 Root SSH e App Store (mgu-store) sulle head unit BMW MGU iDrive 7, da un PC Windows.
@@ -20,7 +20,7 @@ COSA SERVE
 LA SCHERMATA
 ------------
 1 Connessione vettura   Gateway, VIN, IP, tipo, seriale e hardware della MGU.
-2 Accesso SSH MGU       Flash, apertura SSH, chiave, backup della codifica.
+2 Accesso SSH MGU       Flash, apertura SSH, backup della codifica.
 3 Applicazioni MGU      Versioni installate e ultime pubblicate, installazione,
                         aggiornamento, rimozione dello Store, riavvio della MGU.
 In basso il registro di tutte le operazioni (completo, in inglese, in data\logs).
@@ -61,8 +61,9 @@ SE QUALCOSA NON VA
 - "Nessun gateway ENET ha risposto": cavo, modalità diagnosi, avvio come
   amministratore.
 - "Chiave rifiutata": prova "Apri SSH", poi "Correggi chiave" (rifà il flash).
-- La chiave SSH di root è salvata in data\enrollments\<VIN>\. Con "Sfoglia…"
-  se ne può usare un'altra (per esempio quella creata da un altro PC).
+- La chiave SSH di root la gestisce il programma da solo: è quella contenuta
+  nell'immagine di debug (data\assets) e dopo il flash viene salvata anche in
+  data\enrollments\<VIN>\. Non va scelta né copiata.
 - "Controlla aggiornamenti GitHub" (riquadro 3) legge le ultime versioni di
   mgu-store pubblicate su GitHub e le confronta con quelle lette dalla MGU
   all'ultimo collegamento. Non serve l'auto, basta internet sul PC.

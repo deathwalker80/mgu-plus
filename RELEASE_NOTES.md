@@ -1,18 +1,20 @@
 <!-- prerelease -->
-## MGU Plus 1.2.1 (beta, da provare in auto)
+## MGU Plus 1.2.2 (beta, da provare in auto)
 
 Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. Tutto in una schermata, in italiano.
 
-**Da scaricare:** `MGU-Plus-windows-1.2.1.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+**Da scaricare:** `MGU-Plus-windows-1.2.2.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+
+### Novità della 1.2.2
+- Tolto il campo della chiave SSH: il programma usa da solo la chiave giusta, non c'è niente da scegliere.
 
 ### Novità della 1.2.1
 - All'avvio legge subito da GitHub le ultime versioni di mgu-store e le mostra nella tabella, senza aspettare la vettura.
-- Chiave SSH root indicata come facoltativa: vuota, il programma usa da solo quella giusta.
 - iDrive 8 indicato come sperimentale (intestazione e tipo MGU): il root SSH lo supporta, lo Store è provato solo in emulatore.
 
 ### Cosa fa
 - **Connessione vettura:** via cavo ENET o hotspot Wi-Fi dell'auto; legge VIN, IP, seriale e hardware della MGU.
-- **Accesso SSH MGU:** Flash + Apri SSH, Apri SSH, Correggi chiave, Backup codifica (sola lettura), Disattiva SSH; scelta della chiave privata.
+- **Accesso SSH MGU:** Flash + Apri SSH, Apri SSH, Correggi chiave, Backup codifica (sola lettura), Disattiva SSH.
 - **Applicazioni MGU:** versioni installate contro le ultime pubblicate, Installa / Aggiorna, Rimuovi Store, Riavvia MGU, Controlla aggiornamenti GitHub.
 
 ### Da sapere
