@@ -1,0 +1,85 @@
+﻿MGU Plus  -  versione 1.2.0
+===========================
+
+Root SSH e App Store (mgu-store) sulle head unit BMW MGU iDrive 7, da un PC Windows.
+NON funziona sulle NBT / NBT EVO (iDrive 6): il programma le riconosce e si ferma.
+iDrive 8: lo Store è provato dai suoi autori solo in emulatore.
+
+
+COSA SERVE
+----------
+- PC Windows 10/11 con il client OpenSSH
+  (Impostazioni > App > Funzionalità facoltative > "Client OpenSSH").
+- Cavo ENET collegato alla presa OBD dell'auto e alla porta di rete del PC.
+- Internet sul PC (va benissimo il Wi-Fi: il cavo ENET resta per l'auto).
+- Auto parcheggiata, alimentazione stabile (motore acceso o caricabatterie).
+- BimmerCode o E-Sys per ripristinare la codifica dopo il flash.
+
+
+LA SCHERMATA
+------------
+1 Connessione vettura   Gateway, VIN, IP, tipo, seriale e hardware della MGU.
+2 Accesso SSH MGU       Flash, apertura SSH, chiave, backup della codifica.
+3 Applicazioni MGU      Versioni installate e ultime pubblicate, installazione,
+                        aggiornamento, rimozione dello Store, riavvio della MGU.
+In basso il registro di tutte le operazioni (completo, in inglese, in data\logs).
+
+
+PRIMA VOLTA SU UN'AUTO (non ancora rootata)
+--------------------------------------------
+1. Avvia MGU-Plus.exe con tasto destro > "Esegui come amministratore".
+2. Collega il cavo ENET e metti il quadro in modalità diagnosi: premi 3 volte
+   velocemente Start/Stop, finché il quadro mostra "Modalità diagnosi attiva".
+3. Premi "Connetti vettura": compaiono VIN, IP, seriale e hardware della MGU.
+4. Scegli il "Tipo MGU" (ID7 = software 030.xxx). Se non sei sicuro, FERMATI.
+5. Premi "Backup codifica" (sola lettura): salva la codifica in data\preflight.
+   Copiala anche fuori dal PC. Un backup con BimmerCode in più non guasta.
+6. Premi "Flash + Apri SSH" e conferma. Non scollegare nulla fino alla fine.
+   Il flash cancella la codifica e gli abbinamenti Digital Key.
+7. Ripristina la codifica con BimmerCode o E-Sys e riavvia la head unit.
+   (Il programma NON riscrive la codifica da solo: vedi sotto.)
+8. Premi "Installa / Aggiorna" e, alla domanda, rispondi Sì al riavvio della MGU.
+   L'icona dello Store compare tra le app dell'auto.
+
+
+AUTO GIÀ ROOTATA
+----------------
+"Connetti vettura", poi "Installa / Aggiorna". La tabella mostra per ogni
+componente la versione installata, l'ultima pubblicata e cosa va aggiornato.
+Se SSH non risponde: "Apri SSH" (non rifà il flash).
+Senza cavo ENET: collega il PC all'hotspot Wi-Fi dell'auto e premi "Connetti
+vettura"; il programma la trova da solo (172.16.222.97). Con l'hotspot si
+possono fare solo le operazioni su SSH già attivo (Store, riavvio, verifica).
+
+
+SE QUALCOSA NON VA
+------------------
+- "Manca la codifica della head unit": ripristinala con BimmerCode / E-Sys,
+  riavvia la head unit e premi di nuovo "Installa / Aggiorna".
+  L'installer si ferma PRIMA di toccare qualsiasi cosa.
+- "Nessun gateway ENET ha risposto": cavo, modalità diagnosi, avvio come
+  amministratore.
+- "Chiave rifiutata": prova "Apri SSH", poi "Correggi chiave" (rifà il flash).
+- La chiave SSH di root è salvata in data\enrollments\<VIN>\. Con "Sfoglia…"
+  se ne può usare un'altra (per esempio quella creata da un altro PC).
+- "Controlla aggiornamenti GitHub" (riquadro 3) legge le ultime versioni di
+  mgu-store pubblicate su GitHub e le confronta con quelle lette dalla MGU
+  all'ultimo collegamento. Non serve l'auto, basta internet sul PC.
+
+
+SICUREZZA
+---------
+La chiave root di serie è la stessa per tutte le auto flashate con questo
+metodo ed è pubblica. Usa una password robusta per l'hotspot Wi-Fi dell'auto.
+"Disattiva SSH" toglie la persistenza e spegne SSH.
+
+
+CREDITI E LICENZE
+-----------------
+- Root SSH: github.com/cauliflowermossgrape/idrive7-8-ssh-root
+  (pubblico dominio, The Unlicense - vedi LICENSE).
+- mgu-store: github.com/robertnisipeanu/mgu-store (GPL-3.0). NON è incluso:
+  il suo installer ufficiale viene scaricato dalla sua release e verificato
+  con lo SHA256SUMS pubblicato, ogni volta.
+- MGU Plus: DeathWalkeR.
+Uso a tuo rischio, solo su auto tue o con il consenso del proprietario.

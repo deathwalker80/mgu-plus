@@ -15,3 +15,5 @@ dist/
 *.zip
 # Coding backups (contain VIN / coding) - never commit
 data/preflight/
+# mgu-store installer downloaded at run time (GPL-3.0, from its own release)
+data/mgu-store/

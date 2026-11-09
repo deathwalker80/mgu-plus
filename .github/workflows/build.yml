@@ -1,0 +1,46 @@
+name: Build MGU Plus
+
+# Un tag vX.Y.Z (o vX.Y.Z-betaN) costruisce l'exe su Windows e pubblica la
+# release con lo zip. I tag con il trattino escono come pre-release: il
+# controllo aggiornamenti dentro MGU Plus vede solo le release definitive.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Versione del tag = versione dentro l'app
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $base = $tag.Split("-")[0]
+          $app = (Select-String -Path gui.py -Pattern '^APP_VERSION = "(.+)"').Matches[0].Groups[1].Value
+          if ($base -ne $app) { throw "Il tag $tag non corrisponde ad APP_VERSION $app in gui.py" }
+      - name: Build
+        shell: cmd
+        run: build_exe.bat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MGU-Plus-windows
+          path: dist/MGU-Plus-windows-*.zip
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $zip = (Get-ChildItem dist/MGU-Plus-windows-*.zip).FullName
+          $pre = if ($tag.Contains("-")) { "--prerelease" } else { "" }
+          gh release create $tag $zip --title "MGU Plus $($tag.TrimStart('v'))" --notes-file RELEASE_NOTES.md $pre

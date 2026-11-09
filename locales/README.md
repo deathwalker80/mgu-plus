@@ -1,6 +1,7 @@
 # GUI translations
 
-The GUI starts in English on every launch. Use the top-right selector to change
+MGU Plus starts in Italian (`it.json`, DEFAULT_LANGUAGE in gui.py); English is
+the source text and needs no file. Use the top-right selector to change
 language without restarting or changing connection/action parameters. The CLI
 and all diagnostic/flashing code remain unchanged.
 
@@ -36,11 +37,11 @@ Unmatched logs, protocol dumps, remote script output and third-party errors stay
 unchanged. Switching languages re-renders the original in-memory history.
 
 Keep translator attribution in the relevant README only. The window title stays
-`MGU iDrive SSH Tool` in every language; the GUI and diagnostic logs do not
+`MGU Plus <version>` in every language; the GUI and diagnostic logs do not
 display translator credits.
 
 Add a JSON file and restart the source GUI, or rebuild with `build_exe.bat`.
-`MGU-SSH.spec` bundles the whole directory relative to `i18n.py`, including for
+`MGU-Plus.spec` bundles the whole directory relative to `i18n.py`, including for
 PyInstaller's one-folder layout. No additional runtime dependencies are needed.
 
 Run the offline checks from the repository root:

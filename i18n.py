@@ -24,7 +24,10 @@ class Translator:
     def t(self, source):
         return self.catalogs[self.language].get('strings', {}).get(source, source)
 
-    def log(self, text):
+    def log(self, text, keep_original=True):
+        """The log text in the selected language. Each translated line is
+        followed by its English original marked [EN], unless keep_original
+        is False (the session log file on disk always keeps the original)."""
         if self.language == 'en':
             return text
         lines = []
@@ -46,8 +49,11 @@ class Translator:
                         break
             # Retain the exact original diagnostic text for support/searching.
             if translated != original:
-                lines.append((stamp or '') + leading + translated + '\n')
-                lines.append((stamp or '') + leading + '[EN] ' + original + (ending or ''))
+                if keep_original:
+                    lines.append((stamp or '') + leading + translated + '\n')
+                    lines.append((stamp or '') + leading + '[EN] ' + original + (ending or ''))
+                else:
+                    lines.append((stamp or '') + leading + translated + (ending or ''))
             else:
                 lines.append(line)
         return ''.join(lines)

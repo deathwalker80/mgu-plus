@@ -13,9 +13,12 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from mgu7 import assets as assets_mod
 from mgu7 import diag, discovery, enroll, flash, hsfz, identity as identity_mod, preflight, sshcli
+from mgu7 import store as store_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 EXIT_OK = 0
 EXIT_ERROR = 1
+# Actions that need only SSH, so they also work over the car's Wi-Fi hotspot.
+HOTSPOT_ACTIONS = ('check', 'store', 'store-restart', 'store-remove')
 
 # A session log file mirrors everything log()/journal() emit, so a full record
 # of a run (every step, and every HSFZ frame even without --verbose) is on disk
@@ -96,6 +99,15 @@ class Tool:
 
     def connect(self):
         args = self.args
+        if args.gateway == 'hotspot':
+            # The car's Wi-Fi hotspot reaches the head unit's SSH only: no
+            # diagnostics, so only the steps that work over SSH alone.
+            if args.action not in HOTSPOT_ACTIONS:
+                raise SystemExit("This step needs the ENET cable: the car's Wi-Fi hotspot reaches only an "
+                                 "SSH that is already active.")
+            self.mgu_ip = args.mgu_ip or store_mod.HOTSPOT_IP
+            log("Using the car's Wi-Fi hotspot: head unit at %s." % self.mgu_ip)
+            return
         if not args.gateway or args.gateway == 'auto':
             log('Scanning active adapters for an ENET gateway (UDP 6811 broadcast)...')
             gateways = discovery.discover()
@@ -174,7 +186,7 @@ class Tool:
 
     def preflight(self):
         self.connect()
-        out_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'preflight')
+        out_root = os.path.join(HERE, 'data', 'preflight')
         result = preflight.backup(self.client, self.svk, out_root, vin=self.vin, log=log)
         log('Coding backup written to %s' % result['folder'])
         if not result['verified']:
@@ -281,7 +293,13 @@ class Tool:
 
     def _load_identity(self):
         """Return the key-file path for this unit's saved identity, or None.
-        (The system ssh client is given this path directly.)"""
+        (The system ssh client is given this path directly.) A key chosen
+        with --key wins over the saved ones."""
+        chosen = getattr(self.args, 'key', None)
+        if chosen:
+            if os.path.isfile(chosen):
+                return chosen
+            raise SystemExit('SSH key file not found: %s' % chosen)
         directory = self._resolve_enrollment_dir()
         if not directory:
             return None
@@ -375,6 +393,150 @@ class Tool:
     def persist(self):
         self.connect()
         return EXIT_OK if self.run_persist() else EXIT_ERROR
+
+    def _store_target(self):
+        """Connect over ENET and return the root key that logs in to this unit,
+        or None (with the reason logged). Used by store and store-restart."""
+        self.connect()
+        if not self.mgu_ip:
+            log('No MGU IP known; pass --mgu-ip to probe port 22.')
+            return None
+        if not self.probe_open(self.mgu_ip):
+            log('Root SSH is not active on this head unit: run "Flash + Enable" (first time) '
+                'or "Enable" (already flashed) first.')
+            return None
+        identity = self._load_identity()
+        if not identity:
+            log('No saved key for this unit; using the root key of the debug image.')
+            identity = self._write_baked_identity()
+        r = sshcli.probe_login(self.mgu_ip, identity, command='id -u')
+        if not r.get('connected') or r.get('output') != '0':
+            log('SSH connection failed: %s' % (r.get('error') or 'not root (id -u=%s)' % r.get('output')))
+            if r.get('key_unreadable'):
+                self._key_unreadable_finish(identity)
+            return None
+        log('Root SSH OK on %s.' % self.mgu_ip)
+        return identity
+
+    def store(self):
+        """Install mgu-store on the unit (mgu7/store.py)."""
+        identity = self._store_target()
+        if not identity:
+            return EXIT_ERROR
+        return store_mod.install(self.mgu_ip, identity, log)
+
+    def store_restart(self):
+        """Restart the head unit the way the Store does, to finish its setup."""
+        identity = self._store_target()
+        if not identity:
+            return EXIT_ERROR
+        if not self.args.yes:
+            answer = input('Restart the head unit now? [y/N] ').strip().lower()
+            if answer not in ('y', 'yes'):
+                raise SystemExit('Aborted.')
+        return EXIT_OK if store_mod.restart(self.mgu_ip, identity, log) == 0 else EXIT_ERROR
+
+    def store_remove(self):
+        """Remove the Store setup from the unit (mgu-install uninstall)."""
+        identity = self._store_target()
+        if not identity:
+            return EXIT_ERROR
+        return store_mod.uninstall(self.mgu_ip, identity, log)
+
+    def check(self):
+        """Read everything the GUI shows, changing nothing on the car: the car
+        (over ENET, or the car's Wi-Fi hotspot when no ENET gateway answers),
+        whether root SSH answers, the Store versions on the unit and the newest
+        published ones. Written to data/mgu-store/state.json; exit 0 when the
+        car answered."""
+        state = {'car': None, 'root': None, 'store': None, 'catalog': None}
+        rows = []
+        try:
+            catalog, online = store_mod.fetch_catalog(log)
+            rows = store_mod.catalog_rows(catalog)
+            state['catalog'] = {'online': online, 'commit': catalog.get('commit'), 'rows': rows}
+            latest = next((r['latest'] for r in rows if r['id'] == 'robertn_store'), None)
+            if latest:
+                log('Latest Store version: %s' % latest)
+        except store_mod.StoreError as e:
+            log('Could not read the latest Store versions: %s' % e)
+        via = 'hotspot' if self.args.gateway == 'hotspot' else 'enet'
+        try:
+            self.connect()
+        except SystemExit as e:
+            if via == 'enet' and (not self.args.gateway or self.args.gateway == 'auto') \
+                    and store_mod.ssh_banner(store_mod.HOTSPOT_IP):
+                log(str(e))
+                log("No ENET gateway, but the head unit answers on the car's Wi-Fi hotspot (%s)."
+                    % store_mod.HOTSPOT_IP)
+                via = 'hotspot'
+                self.mgu_ip = store_mod.HOTSPOT_IP
+            else:
+                state['car'] = {'error': str(e)}
+                log(str(e))
+                store_mod.write_state(state)
+                return EXIT_ERROR
+        except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError) as e:
+            state['car'] = {'error': str(e)}
+            log('FAILED:', e)
+            store_mod.write_state(state)
+            return EXIT_ERROR
+        car = {'via': via, 'vin': self.vin, 'gateway': self.args.gateway if via == 'enet' else None,
+               'mgu_ip': self.mgu_ip, 'svk': None, 'hardware': None, 'serial': None}
+        if self.svk is not None:
+            car['svk'] = self.svk.summary()
+            car['hardware'] = ', '.join(str(r) for r in self.svk.all_named('HWEL')) or None
+        if self.client is not None:
+            try:
+                body = preflight._read_did(self.client, hsfz.MGU, 0xF18C)
+                if body:
+                    car['serial'] = body.decode('ascii', 'replace').strip('\x00 ') or body.hex().upper()
+            except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError, OSError) as e:
+                log('MGU serial number not read: %s' % e)
+        if car['hardware'] or car['serial']:
+            log('MGU hardware: %s | serial: %s' % (car['hardware'] or '?', car['serial'] or '?'))
+        state['car'] = car
+        root = {'active': False, 'reason': None}
+        identity = None
+        if not self.mgu_ip:
+            root['reason'] = 'no-ip'
+            log('No MGU IP known; pass --mgu-ip to probe port 22.')
+        elif not self.probe_open(self.mgu_ip):
+            root['reason'] = 'port-closed'
+            log('Root SSH: not active (port 22 closed).')
+        else:
+            identity = self._load_identity()
+            if not identity:
+                log('No saved key for this unit; using the root key of the debug image.')
+                identity = self._write_baked_identity()
+            r = sshcli.probe_login(self.mgu_ip, identity, command='id -u')
+            if r.get('connected') and r.get('output') == '0':
+                root['active'] = True
+                log('Root SSH OK on %s.' % self.mgu_ip)
+            else:
+                root['reason'] = 'key-unreadable' if r.get('key_unreadable') else 'login-refused'
+                log('SSH connection failed: %s' % (r.get('error') or 'not root (id -u=%s)' % r.get('output')))
+        state['root'] = root
+        if root['active']:
+            try:
+                installed = store_mod.read_installed(self.mgu_ip, identity)
+                compared = store_mod.compare(rows, installed)
+                summary = store_mod.summarize(compared, installed)
+                state['store'] = {'installed': installed, 'rows': compared, 'summary': summary}
+                if not installed:
+                    log('Store: not installed.')
+                elif summary['updates'] + summary['missing'] == 1:
+                    log('Store %s installed: 1 update available.' % (summary['store'] or '?'))
+                elif summary['updates'] or summary['missing']:
+                    log('Store %s installed: %d updates available.' % (summary['store'] or '?',
+                                                                       summary['updates'] + summary['missing']))
+                else:
+                    log('Store %s installed: everything is up to date.' % (summary['store'] or '?'))
+            except store_mod.StoreError as e:
+                state['store'] = {'error': str(e)}
+                log('Store check failed: %s' % e)
+        store_mod.write_state(state)
+        return EXIT_OK
 
     def disable(self):
         """Full revert: if reachable, undo SSH persistence so it goes back to
@@ -863,8 +1025,9 @@ class Tool:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MGU ID7/ID8 SSH enable, status and close tool (flash-debug-mode + SSH-identity enroll).')
-    parser.add_argument('action', choices=('enable', 'flash', 'fix-key', 'close', 'disable', 'status', 'persist', 'preflight'), help='enable = enroll-only (re-open SSH on an already-flashed unit, no flashing); flash = flash the debug image + enroll; fix-key = re-flash carrying our root key in the unsigned region (repair for units that enroll + open port 22 but refuse login because their stock authorized_keys.root holds a different key - issue #2); persist = make SSH start on every boot then turn debug mode off (clears the B7F8E5 DTC); disable = revert persistence + stop debug/SSH; close = stop debug/SSH; status = read state; preflight = back up the MGU coding read-only over ENET before flashing (no extra adapter)')
-    parser.add_argument('--gateway', default='auto', help="ENET gateway/ZGW address, or 'auto' for UDP 6811 broadcast discovery (default: %(default)s)")
+    parser.add_argument('action', choices=('enable', 'flash', 'fix-key', 'close', 'disable', 'status', 'persist', 'preflight', 'store', 'store-restart', 'store-remove', 'check'), help='enable = enroll-only (re-open SSH on an already-flashed unit, no flashing); flash = flash the debug image + enroll; fix-key = re-flash carrying our root key in the unsigned region (repair for units that enroll + open port 22 but refuse login because their stock authorized_keys.root holds a different key - issue #2); persist = make SSH start on every boot then turn debug mode off (clears the B7F8E5 DTC); disable = revert persistence + stop debug/SSH; close = stop debug/SSH; status = read state; preflight = back up the MGU coding read-only over ENET before flashing (no extra adapter); store = install the mgu-store app store over the root SSH access (exit 10: installed, a head-unit restart finishes it); store-restart = restart the head unit to finish the Store setup; store-remove = remove everything the Store setup put on the head unit; check = read the car, root SSH and the installed and newest Store versions into data/mgu-store/state.json, changing nothing')
+    parser.add_argument('--gateway', default='auto', help="ENET gateway/ZGW address, 'auto' for UDP 6811 broadcast discovery, or 'hotspot' to reach the head unit over the car's Wi-Fi hotspot (SSH steps only) (default: %(default)s)")
+    parser.add_argument('--key', metavar='PATH', help="root SSH private key to use instead of the saved one (data/enrollments/<VIN>/)")
     parser.add_argument('--vin', help='17-char VIN (required for enable; written to the MGU with 2E F1 90)')
     parser.add_argument('--arch', default=ID7, choices=(ID7, ID8_BDC3, ID8_BCP), help='head-unit variant (default: %(default)s)')
     parser.add_argument('--mgu-ip', help='MGU IP override for the SSH probe/enroll verification (default: read via 22 17 2A)')
@@ -900,6 +1063,14 @@ def main(argv=None):
             return tool.disable()
         elif args.action == 'preflight':
             return tool.preflight()
+        elif args.action == 'store':
+            return tool.store()
+        elif args.action == 'store-restart':
+            return tool.store_restart()
+        elif args.action == 'check':
+            return tool.check()
+        elif args.action == 'store-remove':
+            return tool.store_remove()
         else:
             return tool.enable()
     except KeyboardInterrupt:

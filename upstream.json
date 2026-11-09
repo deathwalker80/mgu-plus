@@ -1,0 +1,16 @@
+{
+  "_note": "Versioni dei progetti su cui si basa MGU Plus. Il workflow 'Controllo aggiornamenti upstream' le confronta ogni giorno con quelle pubblicate e apre una issue con le novità (e i parametri cambiati) da integrare. Dopo averle integrate, aggiornare qui i valori.",
+  "root_tool": {
+    "repo": "cauliflowermossgrape/idrive7-8-ssh-root",
+    "branch": "main",
+    "release": "v1.3.1",
+    "commit": "a43ac32029d9d4f93d1da649042381fb995e7b55"
+  },
+  "mgu_store": {
+    "repo": "robertnisipeanu/mgu-store",
+    "branch": "main",
+    "installer_path": "deploy/mgu-install.js",
+    "installer_commit": "375c79fea53499043670d211368ed97d55685cf3",
+    "installer_sha256sums": "4840fcc27a9b11d1cc0a6a2a0f86ed62e619525800591743b31a9cf67eaedfe0"
+  }
+}

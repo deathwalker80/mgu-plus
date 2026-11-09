@@ -1,0 +1,31 @@
+# Windows version resource for MGU-Plus.exe (PyInstaller, MGU-Plus.spec).
+# Keep filevers/prodvers and the strings in step with APP_VERSION in gui.py.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 2, 0, 0),
+    prodvers=(1, 2, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '041004B0',
+        [
+          StringStruct('CompanyName', 'DeathWalkeR'),
+          StringStruct('FileDescription', 'MGU Plus'),
+          StringStruct('FileVersion', '1.2.0'),
+          StringStruct('InternalName', 'MGU-Plus'),
+          StringStruct('OriginalFilename', 'MGU-Plus.exe'),
+          StringStruct('ProductName', 'MGU Plus'),
+          StringStruct('ProductVersion', '1.2.0')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [0x0410, 1200])])
+  ]
+)

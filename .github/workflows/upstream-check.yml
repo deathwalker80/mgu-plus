@@ -1,0 +1,22 @@
+name: Controllo aggiornamenti upstream
+
+# Ogni giorno confronta upstream.json con idrive7-8-ssh-root e mgu-store e
+# apre una issue per ogni novità da integrare in MGU Plus.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confronta con upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/upstream_check.py

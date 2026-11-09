@@ -1,0 +1,539 @@
+{
+  "name": "Italiano",
+  "strings": {
+    "BMW ID7 / ID8  •  root over ENET": "BMW ID7 / ID8  •  root via ENET",
+    "VIN": "VIN",
+    "Detect VIN": "Rileva VIN",
+    "(auto-reads the VIN from the car)": "(legge il VIN dall’auto in automatico)",
+    "CONNECTION (optional)": "CONNESSIONE (facoltativa)",
+    "Gateway": "Gateway",
+    "Variant": "Variante",
+    "YOUR CAR (required before flashing)": "LA TUA AUTO (obbligatoria prima del flash)",
+    "Pick ID7 or ID8 to match your head unit. If you are not 100% sure, STOP and check - flashing the wrong one can leave the unit stuck in programming mode.": "Scegli ID7 o ID8 in base alla tua head unit. Se non sei sicuro al 100%, FERMATI e controlla: flashare la variante sbagliata può lasciare l’unità bloccata in modalità di programmazione.",
+    "MGU IP": "IP della MGU",
+    "Flash + Enable": "Flash + Abilita",
+    "Enable": "Abilita",
+    "Disable": "Disattiva",
+    "Turn debug mode off after enabling (clears the B7F8E5 DTC)": "Spegni la modalità debug dopo l’abilitazione (cancella l’errore B7F8E5)",
+    "On = SSH stays up with debug off (recommended).  Off = SSH persistent but debug mode stays on.": "Attivo = SSH resta attivo con il debug spento (consigliato).  Disattivo = SSH persistente ma la modalità debug resta accesa.",
+    "Give this car its own unique SSH key  (advanced - NOT recommended)": "Dai a quest’auto una chiave SSH unica  (avanzato - SCONSIGLIATO)",
+    "Swaps the shared dev key for a per-car key. Can only be done ONCE - if you lose the key or reflash, you can't create a new identity. Leave off unless you know why you need it.": "Sostituisce la chiave condivisa con una chiave propria dell’auto. Si può fare UNA SOLA VOLTA: se perdi la chiave o rifai il flash, non puoi creare una nuova identità. Lascialo spento se non sai perché ti serve.",
+    "Ready.": "Pronto.",
+    "Working…": "In corso…",
+    "VIN required": "VIN obbligatorio",
+    "Flashing writes the VIN to the unit, so it is required.\nEnter it or click Detect VIN first.": "Il flash scrive il VIN sull’unità, quindi è obbligatorio.\nInseriscilo o premi prima Rileva VIN.",
+    "Flash the debug image?": "Flashare l’immagine di debug?",
+    "This puts the head unit into programming mode and reboots it.\n\nVIN %s will be written to the unit.\n\nContinue?": "La head unit entra in modalità di programmazione e si riavvia.\n\nSull’unità verrà scritto il VIN %s.\n\nIl flash cancella la codifica della head unit: fai prima il backup con BimmerCode o E-Sys.\n\nContinuare?",
+    "Disable SSH?": "Disattivare SSH?",
+    "Revert SSH to stock and stop debug mode on the head unit?": "Riportare SSH allo stato originale e fermare la modalità debug sulla head unit?",
+    "Scanning for an ENET gateway (UDP 6811)…": "Ricerca di un gateway ENET (UDP 6811)…",
+    "No ENET gateway responded. Check the cable/adapter and that the car is awake.": "Nessun gateway ENET ha risposto. Controlla cavo/adattatore e che l’auto sia sveglia.",
+    "not reported": "non riportato",
+    "MGU-SSH failed to start": "MGU-SSH non si è avviato",
+    "Scanning active adapters for an ENET gateway (UDP 6811 broadcast)...": "Ricerca di un gateway ENET sulle schede di rete attive (broadcast UDP 6811)...",
+    "Found 1 ENET gateway.": "Trovato 1 gateway ENET.",
+    "Checking debug/SSH state...": "Controllo dello stato debug/SSH...",
+    "No MGU IP known; pass --mgu-ip to probe port 22.": "IP della MGU sconosciuto; indicalo in \"IP della MGU\" per provare la porta 22.",
+    "Stopping the MGU SSH service (31 02 A0 FD)...": "Arresto del servizio SSH della MGU (31 02 A0 FD)...",
+    "Note: after closing, the SSH state clears on the next service cycle; the port probe is best re-run with 'status'.": "Nota: dopo la chiusura lo stato SSH si azzera al ciclo di servizio successivo; conviene ricontrollare la porta con \"status\".",
+    "Proven SSH service channel established.": "Canale di servizio SSH collaudato stabilito.",
+    "Verifying with the MGU-restart wake sequence...": "Verifica con la sequenza di riavvio/risveglio della MGU...",
+    "Port 22 did not come up after the restart; re-run 'status' after the MGU finishes its service cycle.": "La porta 22 non si è aperta dopo il riavvio; ripeti \"status\" quando la MGU ha finito il ciclo di servizio.",
+    "Port 22 is open - waiting 10 s for the SSH daemon to finish starting...": "Porta 22 aperta - attesa di 10 s per l’avvio completo del demone SSH...",
+    "sshd-always-on.sh not found next to ssh_enable.py; cannot change SSH persistence.": "sshd-always-on.sh non trovato accanto al programma; impossibile cambiare la persistenza SSH.",
+    "Admin confirmed: root on the head unit.": "Confermato: root sulla head unit.",
+    "No MGU IP known; pass --mgu-ip. Debug mode left unchanged.": "IP della MGU sconosciuto; indicalo in \"IP della MGU\". Modalità debug lasciata invariata.",
+    "Port 22 is not open; bringing SSH up first...": "Porta 22 chiusa; prima attivo SSH...",
+    "SSH did not come up; run \"enable\" first. Debug mode left unchanged.": "SSH non si è attivato; esegui prima \"Abilita\". Modalità debug lasciata invariata.",
+    "SSH persistence failed; leaving debug mode ON so you do not lose access.": "Persistenza SSH non riuscita; lascio la modalità debug ACCESA per non perdere l’accesso.",
+    "Disabling debug mode (31 02 A0 FD) so the B7F8E5 DTC clears...": "Spegnimento della modalità debug (31 02 A0 FD) per cancellare l’errore B7F8E5...",
+    "DONE: SSH runs with debug mode OFF - no more B7F8E5 error.": "FATTO: SSH funziona con la modalità debug SPENTA - niente più errore B7F8E5.",
+    "Persist finished but verification was inconclusive; re-check with \"status\".": "Persistenza terminata ma verifica non conclusiva; ricontrolla con \"status\".",
+    "Reverting SSH persistence (back to stock debug-only)...": "Ripristino della persistenza SSH (ritorno allo stato originale, solo debug)...",
+    "SSH not reachable to revert persistence; stopping debug mode anyway.": "SSH non raggiungibile per togliere la persistenza; fermo comunque la modalità debug.",
+    "Stopping the MGU debug/SSH service (31 02 A0 FD)...": "Arresto del servizio debug/SSH della MGU (31 02 A0 FD)...",
+    "Refusing to install a malformed public key.": "Rifiuto di installare una chiave pubblica malformata.",
+    "Generating a unique SSH key for this car and installing it over SSH...": "Generazione di una chiave SSH unica per quest’auto e installazione via SSH...",
+    "Unique-key install failed; keeping the shared dev key for login.": "Installazione della chiave unica non riuscita; resta la chiave condivisa per l’accesso.",
+    "This car now has its own unique SSH key:": "Ora quest’auto ha la sua chiave SSH unica:",
+    "Verified: the unit accepts this car's unique key.": "Verificato: l’unità accetta la chiave unica di quest’auto.",
+    "Shared dev key removed - this car now accepts ONLY its own unique key.": "Chiave condivisa rimossa - ora quest’auto accetta SOLO la sua chiave unica.",
+    "Enable mode: enroll-only (no flashing).": "Modalità Abilita: solo registrazione (nessun flash).",
+    "Port 22 is already open; enrolling anyway to refresh the identity.": "La porta 22 è già aperta; registro comunque per aggiornare l’identità.",
+    "Enrolling this unit (A6 71 challenge -> certificate -> A0 FD install)...": "Registrazione di questa unità (challenge A6 71 -> certificato -> installazione A0 FD)...",
+    "The saved per-car key did not log in; falling back to the baked key.": "La chiave salvata per quest’auto non entra; uso la chiave dell’immagine di debug.",
+    "--persist: making SSH survive debug mode being off...": "Persistenza: SSH resterà attivo anche con la modalità debug spenta...",
+    "Warning: SVK gate no longer passes after flash.": "Attenzione: dopo il flash il controllo SVK non passa più.",
+    "Root SSH key (in all formats) and connect.txt written:": "Chiave SSH di root (in tutti i formati) e connect.txt scritti:",
+    "Interrupted.": "Interrotto.",
+    "MGU iDrive  SSH": "MGU iDrive  SSH",
+    "OpenSSH client (ssh) not found on PATH; cannot verify the login. Install the Windows OpenSSH client or add ssh to PATH.": "Client OpenSSH (ssh) non trovato; impossibile verificare l’accesso. Installa il client OpenSSH di Windows (Impostazioni > App > Funzionalità facoltative) o aggiungi ssh al PATH.",
+    "No per-car key found for this unit; run \"enable\" (or \"flash\") first. Debug mode left unchanged.": "Nessuna chiave trovata per questa unità; esegui prima \"Abilita\" (o \"Flash + Abilita\"). Modalità debug lasciata invariata.",
+    "SSH is now persistent. Leaving debug mode ON (--keep-debug); the B7F8E5 DTC stays until you disable debug.": "Ora SSH è persistente. La modalità debug resta ACCESA; l’errore B7F8E5 resta finché non spegni il debug.",
+    "DONE: debug/SSH stopped. Persistence (if any) is reverted; SSH is debug-only again from the next boot.": "FATTO: debug/SSH fermati. La persistenza (se c’era) è stata tolta; dal prossimo avvio SSH torna solo in debug.",
+    "Installed the unique key but could not verify login with it; leaving the shared dev key in place so you keep access.": "Chiave unica installata ma accesso non verificato; lascio anche la chiave condivisa così non perdi l’accesso.",
+    "Could not remove the shared dev key (it may be in a read-only image); this car's unique key works, and the dev key still works as a fallback.": "Impossibile rimuovere la chiave condivisa (può stare in un’immagine di sola lettura); la chiave unica funziona e quella condivisa resta di riserva.",
+    "NOTE: if the new key does not connect yet, force-restart the head unit - press and HOLD the volume/power knob ~20-30 s until it reboots - so it comes back up loaded with the new key.": "NOTA: se la nuova chiave non entra ancora, forza il riavvio della head unit - tieni PREMUTA la manopola volume/accensione per circa 20-30 s finché si riavvia - così riparte con la nuova chiave.",
+    "MGU SSH enrollment: A0 FD install accepted": "Registrazione SSH della MGU: installazione A0 FD accettata",
+    "MGU SSH enrollment: 172A readback accepted": "Registrazione SSH della MGU: rilettura 172A accettata",
+    "Start here - this is all you need. It flashes the debug image and turns on root SSH in one step.\nIf the car connects afterwards but refuses the key, then use “Fix refusing SSH key” below.": "Parti da qui - basta questo. Flasha l’immagine di debug e attiva root SSH in un solo passo.\nSe poi l’auto si collega ma rifiuta la chiave, usa “Correggi chiave rifiutata” qui sotto.",
+    "Fix refusing SSH key": "Correggi chiave rifiutata",
+    "Enable: re-open SSH on an already-flashed unit (no flashing).      Fix refusing SSH key: login refused after a good flash.      Disable: undo persistence and stop SSH.": "Abilita: riapre SSH su un’unità già flashata (nessun flash).      Correggi chiave rifiutata: accesso rifiutato dopo un flash riuscito.      Disattiva: toglie la persistenza e ferma SSH.",
+    "APP STORE (mgu-store)": "APP STORE (mgu-store)",
+    "Install Store": "Installa Store",
+    "+ Store": "+ Store",
+    "Installs the mgu-store app store on a head unit that already has root SSH (after Flash + Enable, or Enable). Needs internet on this computer and the car awake on stable power. After a flash, restore the head unit coding (BimmerCode / E-Sys) first.": "Installa lo store mgu-store su una head unit che ha già root SSH (dopo Flash + Abilita, o Abilita). Servono internet su questo computer e l’auto sveglia con alimentazione stabile. Dopo un flash, ripristina prima la codifica della head unit (BimmerCode / E-Sys).",
+    "Select your car first": "Prima scegli la tua auto",
+    "Choose your head-unit variant (ID7, ID8 BDC3, or ID8 BCP) under \"YOUR CAR\" before flashing.\n\nThere is no default on purpose: flashing the wrong variant partially writes the wrong image and can leave the unit stuck in programming mode.": "Scegli la variante della head unit (ID7, ID8 BDC3 o ID8 BCP) in \"LA TUA AUTO\" prima del flash.\n\nNon c’è un valore predefinito apposta: flashare la variante sbagliata scrive in parte l’immagine sbagliata e può lasciare l’unità bloccata in modalità di programmazione.",
+    "Session log (saved to data\\logs\\):": "Registro della sessione (salvato in data\\logs\\):",
+    "Open logs folder": "Apri cartella dei log",
+    "Flash done": "Flash completato",
+    "Root SSH is active.\n\nThe flash cleared the head unit coding: restore it now with BimmerCode or E-Sys from your backup and restart the head unit.\n\nThen press “Install Store”.": "Root SSH attivo.\n\nIl flash ha cancellato la codifica della head unit: ripristinala ora con BimmerCode o E-Sys dal tuo backup e riavvia la head unit.\n\nPoi premi “Installa Store”.",
+    "Fix-key re-flashes the debug image (writing the VIN to the unit),\nso the VIN is required. Enter it or click Detect VIN first.": "Correggi chiave rifà il flash dell’immagine di debug (scrivendo il VIN sull’unità),\nquindi il VIN è obbligatorio. Inseriscilo o premi prima Rileva VIN.",
+    "Fix the refusing SSH key?": "Correggere la chiave SSH rifiutata?",
+    "For units that flash + enroll fine and open port 22, but still refuse\nroot login because their stock key differs.\n\nThis re-flashes the debug image carrying OUR key in the one unsigned\nregion (replacing debugCA). It only changes that region's bytes, so the\nworst case is the key not persisting - not a brick. The head unit enters\nprogramming mode and reboots, and (like any flash) CAFD coding is cleared;\nrestore it from your backup.\n\nVIN %s will be written to the unit.\n\nContinue?": "Per le unità in cui flash e registrazione riescono e la porta 22 si apre, ma\nl’accesso root viene rifiutato perché la loro chiave originale è diversa.\n\nRifà il flash dell’immagine di debug con la NOSTRA chiave nell’unica regione\nnon firmata (al posto di debugCA). Cambia solo i byte di quella regione, quindi\nnel caso peggiore la chiave non resta - nessun blocco. La head unit entra in\nprogrammazione e si riavvia e (come ogni flash) la codifica CAFD si cancella;\nripristinala dal tuo backup.\n\nSull’unità verrà scritto il VIN %s.\n\nContinuare?",
+    "Install the Store?": "Installare lo Store?",
+    "Installs mgu-store on the head unit over root SSH.\n\nKeep the car awake and on stable power (engine running or a charger) until it finishes, and this computer connected to the internet.\n\nContinue?": "Installa mgu-store sulla head unit tramite root SSH.\n\nTieni l’auto sveglia e con alimentazione stabile (motore acceso o caricabatterie) fino alla fine, e questo computer collegato a internet.\n\nContinuare?",
+    "Restart the head unit?": "Riavviare la head unit?",
+    "The Store is installed. A head unit restart finishes the setup.\n\nRestart it now?": "Lo Store è installato. Un riavvio della head unit completa l’installazione.\n\nRiavviarla adesso?",
+    "Store installed": "Store installato",
+    "The Store is installed: its tile is among the car’s apps.": "Lo Store è installato: la sua icona è tra le app dell’auto.",
+    "Store not installed": "Store non installato",
+    "The installer stopped before changing anything.\n\nIf the log says the coding is missing (normal after a flash): restore the head unit coding with BimmerCode or E-Sys, restart the head unit, then press “Install Store” again.": "L’installer si è fermato prima di cambiare qualsiasi cosa.\n\nSe il registro dice che manca la codifica (normale dopo un flash): ripristina la codifica della head unit con BimmerCode o E-Sys, riavvia la head unit, poi premi di nuovo “Installa Store”.",
+    "The Store install did not finish. The log shows why.": "L’installazione dello Store non è terminata. Il motivo è nel registro.",
+    "Downloading the mgu-store installer from its release...": "Download dell’installer di mgu-store dalla sua release...",
+    "Using the copy of the installer downloaded earlier.": "Uso la copia dell’installer scaricata in precedenza.",
+    "Installing the Store on the head unit (keep the car awake and on stable power)...": "Installazione dello Store sulla head unit (tieni l’auto sveglia e con alimentazione stabile)...",
+    "DONE: the Store is installed. Its tile is among the car's apps.": "FATTO: lo Store è installato. La sua icona è tra le app dell’auto.",
+    "DONE: the Store is installed. Restart the head unit to finish.": "FATTO: lo Store è installato. Riavvia la head unit per completare.",
+    "STOPPED: the head unit's coding is missing (normal after a flash). Restore it with BimmerCode or E-Sys from your backup, restart the head unit, then press Install Store again.": "FERMO: manca la codifica della head unit (normale dopo un flash). Ripristinala con BimmerCode o E-Sys dal tuo backup, riavvia la head unit, poi premi di nuovo Installa Store.",
+    "STOPPED: the installer refused to install (exit 2); see its message above.": "FERMO: l’installer ha rifiutato l’installazione (uscita 2); vedi il suo messaggio qui sopra.",
+    "An install is running on the head unit: restart it once it is done.": "Sulla head unit è in corso un’installazione: riavviala quando ha finito.",
+    "Restarting the head unit. The Store tile appears among the car's apps when it is back.": "Riavvio della head unit in corso. Al ritorno l’icona dello Store compare tra le app dell’auto.",
+    "Root SSH is not active on this head unit: run \"Flash + Enable\" (first time) or \"Enable\" (already flashed) first.": "Root SSH non è attivo su questa head unit: esegui prima \"Flash + Abilita\" (la prima volta) o \"Abilita\" (se già flashata).",
+    "No saved key for this unit; using the root key of the debug image.": "Nessuna chiave salvata per questa unità; uso la chiave root dell’immagine di debug.",
+    "Restart the head unit to finish setup.": "Riavvia la head unit per completare l’installazione.",
+    "Setup is done: the Store installs and updates everything from here on.": "Installazione completata: da qui in poi lo Store installa e aggiorna tutto.",
+    "1 · Connect the car": "1 · Collega l’auto",
+    "Reads the car over the ENET cable: VIN, head unit address, whether root SSH is active and which Store version it has. It changes nothing on the car.": "Legge l’auto tramite il cavo ENET: VIN, indirizzo della head unit, se root SSH è attivo e quale versione dello Store ha. Non modifica nulla sull’auto.",
+    "Check car": "Controlla auto",
+    "2 · Root SSH": "2 · Root SSH",
+    "The Store installs over root SSH. The first time, “Flash + Enable” writes the debug image and turns SSH on for good; on an already flashed car “Enable” is enough.": "Lo Store si installa tramite root SSH. La prima volta “Flash + Abilita” scrive l’immagine di debug e attiva SSH in modo permanente; su un’auto già flashata basta “Abilita”.",
+    "3 · App Store": "3 · App Store",
+    "Installs mgu-store, or updates it to the newest published version, from this computer. With internet in the car the Store can also update itself from its Installed page.": "Installa mgu-store, o lo aggiorna all’ultima versione pubblicata, da questo computer. Con internet in auto lo Store può aggiornarsi anche da solo dalla sua pagina Installed.",
+    "Check for updates": "Verifica aggiornamenti",
+    "Restart head unit": "Riavvia head unit",
+    "Choose your head-unit variant (ID7, ID8 BDC3, or ID8 BCP) in step 2 “Root SSH” before flashing.\n\nThere is no default on purpose: flashing the wrong variant partially writes the wrong image and can leave the unit stuck in programming mode.": "Prima del flash scegli la variante della head unit (ID7, ID8 BDC3 o ID8 BCP) nel passo 2 “Root SSH”.\n\nNon c’è un valore predefinito apposta: flashare la variante sbagliata scrive in parte l’immagine sbagliata e può lasciare l’unità bloccata in modalità di programmazione.",
+    "Root SSH and App Store for BMW iDrive 7 / 8": "Root SSH e App Store per BMW iDrive 7 / 8",
+    "STEPS": "PASSI",
+    "Run as administrator, with the ENET cable plugged in and the car awake.": "Avvia come amministratore, con il cavo ENET collegato e l’auto sveglia.",
+    "Head unit": "Head unit",
+    "Required before flashing: ID7 = software 030.xxx, ID8 = software 036.xxx. If you are not 100% sure, STOP and check - flashing the wrong one can leave the unit stuck in programming mode.": "Obbligatoria prima del flash: ID7 = software 030.xxx, ID8 = software 036.xxx. Se non sei sicuro al 100%, FERMATI e controlla: flashare la variante sbagliata può lasciare l’unità bloccata in modalità di programmazione.",
+    "Before flashing: back up the head unit coding with BimmerCode or E-Sys. The flash clears the coding and the Digital Key pairings; after it, restore the coding and pair the keys again.": "Prima del flash: fai il backup della codifica della head unit con BimmerCode o E-Sys. Il flash cancella la codifica e gli abbinamenti Digital Key; dopo, ripristina la codifica e riabbina le chiavi.",
+    "Restart the head unit now? It is back after about a minute.": "Riavviare adesso la head unit? Torna attiva dopo circa un minuto.",
+    "Session logs are saved in:\n%s": "I registri delle sessioni sono salvati in:\n%s",
+    "Car": "Auto",
+    "Root SSH": "Root SSH",
+    "App Store": "App Store",
+    "Up to date": "Aggiornato",
+    "Update available": "Aggiornamento disponibile",
+    "Not installed": "Non installato",
+    "Newer than published": "Più recente di quella pubblicata",
+    "Component": "Componente",
+    "Installed": "Installata",
+    "Latest": "Ultima",
+    "State": "Stato",
+    "1.  Plug the ENET cable into the car's OBD socket and into this computer.": "1.  Collega il cavo ENET alla presa OBD dell’auto e a questo computer.",
+    "2.  Switch the ignition on (car awake) and keep it on stable power.": "2.  Accendi il quadro (auto sveglia) e tienila con alimentazione stabile.",
+    "3.  Press “Check car”.": "3.  Premi “Controlla auto”.",
+    "— select your car —": "— scegli la tua auto —",
+    "ID7 — BDC2 / BDC3  (software 030.xxx)": "ID7 — BDC2 / BDC3  (software 030.xxx)",
+    "ID8 — BDC3  (software 036.xxx)": "ID8 — BDC3  (software 036.xxx)",
+    "ID8 — BCP  (software 036.xxx)": "ID8 — BCP  (software 036.xxx)",
+    "Not checked yet": "Non ancora controllato",
+    "Not found": "Non trovata",
+    "Active": "Attivo",
+    "Key refused": "Chiave rifiutata",
+    "Not active": "Non attivo",
+    "Check failed": "Controllo non riuscito",
+    "%s updates available": "%s aggiornamenti disponibili",
+    "Not checked yet: press “Check car”.": "Non ancora controllata: premi “Controlla auto”.",
+    "The car did not answer: check the ENET cable, the ignition and that the program runs as administrator.": "L’auto non ha risposto: controlla il cavo ENET, il quadro acceso e che il programma sia avviato come amministratore.",
+    "Car connected: VIN %s, head unit at %s.": "Auto collegata: VIN %s, head unit su %s.",
+    "Not checked yet: check the car in step 1.": "Non ancora controllato: controlla l’auto nel passo 1.",
+    "Root SSH is active on %s: go on to the App Store.": "Root SSH attivo su %s: prosegui con l’App Store.",
+    "Port 22 is open but the root key was refused: try “Enable”, then “Fix refusing SSH key”.": "La porta 22 è aperta ma la chiave root è stata rifiutata: prova “Abilita”, poi “Correggi chiave rifiutata”.",
+    "Root SSH is not active: first time “Flash + Enable”, already flashed “Enable”.": "Root SSH non è attivo: la prima volta “Flash + Abilita”, se già flashata “Abilita”.",
+    "(versions from the last check, no internet)": "(versioni dell’ultimo controllo, senza internet)",
+    "Reading the installed versions failed: see the log.": "Lettura delle versioni installate non riuscita: vedi il registro.",
+    "The Store is not installed on this head unit.": "Lo Store non è installato su questa head unit.",
+    "Store %s installed: %s updates available.": "Store %s installato: %s aggiornamenti disponibili.",
+    "Store %s installed: everything is up to date.": "Store %s installato: è tutto aggiornato.",
+    "Latest published Store: %s. Check the car to compare it with the head unit.": "Ultimo Store pubblicato: %s. Controlla l’auto per confrontarlo con la head unit.",
+    "Press “Check for updates” to read the versions.": "Premi “Verifica aggiornamenti” per leggere le versioni.",
+    "Reinstall Store": "Reinstalla Store",
+    "Update Store": "Aggiorna Store",
+    "(read from the car)": "(letto dall’auto)",
+    "(auto = found by itself)": "(auto = trovato da solo)",
+    "(empty = read from the car)": "(vuoto = letto dall’auto)",
+    "Showing the versions from the last check.": "Mostro le versioni dell’ultimo controllo.",
+    "Root SSH: not active (port 22 closed).": "Root SSH: non attivo (porta 22 chiusa).",
+    "Store: not installed.": "Store: non installato.",
+    "1 update available": "1 aggiornamento disponibile",
+    "Store %s installed: 1 update available.": "Store %s installato: 1 aggiornamento disponibile.",
+    "Removing the Store from the head unit...": "Tolgo lo Store dalla head unit...",
+    "DONE: the Store is removed. Restart the head unit to finish.": "FATTO: lo Store è stato rimosso. Riavvia la head unit per completare.",
+    "DONE: the Store is removed from the head unit.": "FATTO: lo Store è stato rimosso dalla head unit.",
+    "Removed: nothing of the Store setup is left on the head unit.": "Rimosso: sulla head unit non resta nulla dell’installazione dello Store.",
+    "Removed. Restart the head unit to finish.": "Rimosso. Riavvia la head unit per completare.",
+    "This step needs the ENET cable: the car's Wi-Fi hotspot reaches only an SSH that is already active.": "Questa operazione richiede il cavo ENET: con l’hotspot Wi-Fi dell’auto si raggiunge solo un SSH già attivo.",
+    "No ENET gateway responded. A direct IP can be entered with --gateway.": "Nessun gateway ENET ha risposto. Controlla cavo, quadro in modalità diagnosi e avvio come amministratore; in alternativa indica l’IP del gateway.",
+    "More than one ENET gateway responded; pick one with --gateway <ip>.": "Hanno risposto più gateway ENET; indica quello giusto nel campo Gateway.",
+    "Aborted.": "Annullato.",
+    "Refusing to flash: this unit's BTLD is not 00003F36, so it is outside the supported MGU ID7/ID8 debug catalog. (Use --force to override.)": "Flash rifiutato: il BTLD di questa unità non è 00003F36, quindi non è una MGU ID7/ID8 supportata.",
+    "WARNING: the coding read is incomplete or did not verify - do not rely on it as your only backup.": "ATTENZIONE: la lettura della codifica è incompleta o non verificata - non farci affidamento come unico backup.",
+    "Done. Copy this folder off the machine before flashing.": "FATTO. Copia questa cartella anche fuori dal PC prima del flash."
+  },
+  "logs": [
+    {
+      "source": "Discovery failed: {0}",
+      "translation": "Ricerca non riuscita: {0}"
+    },
+    {
+      "source": "Found gateway {0} | VIN: {1}",
+      "translation": "Trovato il gateway {0} | VIN: {1}"
+    },
+    {
+      "source": "({0} gateways responded; using the first)",
+      "translation": "(hanno risposto {0} gateway; uso il primo)"
+    },
+    {
+      "source": "[{0} finished, exit {1}]",
+      "translation": "[{0} terminato, uscita {1}]"
+    },
+    {
+      "source": "ERROR: {0}",
+      "translation": "ERRORE: {0}"
+    },
+    {
+      "source": "FAILED: {0}",
+      "translation": "NON RIUSCITO: {0}"
+    },
+    {
+      "source": "ENET discovery broadcast -> {0}:{1} (from {2})",
+      "translation": "Broadcast di ricerca ENET -> {0}:{1} (da {2})"
+    },
+    {
+      "source": "Skipped {0}: {1}",
+      "translation": "Saltato {0}: {1}"
+    },
+    {
+      "source": "Ignored a UDP {0} reply from {1} (no BMWVIN marker).",
+      "translation": "Ignorata una risposta UDP {0} da {1} (manca il marcatore BMWVIN)."
+    },
+    {
+      "source": "Found {0} ENET gateways:",
+      "translation": "Trovati {0} gateway ENET:"
+    },
+    {
+      "source": "Connecting to ENET gateway {0}",
+      "translation": "Connessione al gateway ENET {0}"
+    },
+    {
+      "source": "SVK was not decoded: {0}",
+      "translation": "SVK non decodificato: {0}"
+    },
+    {
+      "source": "MGU IP: {0} | netmask: {1}",
+      "translation": "IP della MGU: {0} | netmask: {1}"
+    },
+    {
+      "source": "MGU IP was not decoded: {0}",
+      "translation": "IP della MGU non decodificato: {0}"
+    },
+    {
+      "source": "MGU IP override: {0}",
+      "translation": "IP della MGU indicato a mano: {0}"
+    },
+    {
+      "source": "MGU SSH port {0} is open ({1} ms).",
+      "translation": "Porta SSH {0} della MGU aperta ({1} ms)."
+    },
+    {
+      "source": "MGU SSH port {0} is not open ({1} ms).",
+      "translation": "Porta SSH {0} della MGU chiusa ({1} ms)."
+    },
+    {
+      "source": "probe retry {0}/{1}...",
+      "translation": "nuovo tentativo {0}/{1}..."
+    },
+    {
+      "source": "DTC B7F8E5 (Debugging active / SSH is active!!!): {0}",
+      "translation": "Errore B7F8E5 (debug attivo / SSH attivo): {0}"
+    },
+    {
+      "source": "DTC B7F8E5 (debug/SSH active): {0}",
+      "translation": "Errore B7F8E5 (debug/SSH attivo): {0}"
+    },
+    {
+      "source": "Status: debug/SSH-open state is {0}",
+      "translation": "Stato: debug/SSH {0}"
+    },
+    {
+      "source": "Close routine result: {0}",
+      "translation": "Esito della routine di chiusura: {0}"
+    },
+    {
+      "source": "Initial SSH connection unavailable at {0}:22 - restarting MGU (11 01) and waiting 15 seconds.",
+      "translation": "Connessione SSH iniziale non disponibile su {0}:22 - riavvio la MGU (11 01) e attendo 15 secondi."
+    },
+    {
+      "source": "MGU restart request did not complete cleanly: {0}",
+      "translation": "La richiesta di riavvio della MGU non si è chiusa correttamente: {0}"
+    },
+    {
+      "source": "diag not back yet after restart ({0})",
+      "translation": "la diagnosi non risponde ancora dopo il riavvio ({0})"
+    },
+    {
+      "source": "Verifying SSH login as root with the recovered identity{0}...",
+      "translation": "Verifica dell’accesso SSH come root con l’identità recuperata{0}..."
+    },
+    {
+      "source": "SSH OK as root: {0}",
+      "translation": "SSH OK come root: {0}"
+    },
+    {
+      "source": "SSH not answering yet ({0}) - retrying in 8 s...",
+      "translation": "SSH non risponde ancora ({0}) - riprovo tra 8 s..."
+    },
+    {
+      "source": "SSH verification failed: {0}",
+      "translation": "Verifica SSH non riuscita: {0}"
+    },
+    {
+      "source": "No saved key found in {0}",
+      "translation": "Nessuna chiave salvata in {0}"
+    },
+    {
+      "source": "SSH connection failed: {0}",
+      "translation": "Connessione SSH non riuscita: {0}"
+    },
+    {
+      "source": "The SSH session is not root (id -u={0}); aborting.",
+      "translation": "La sessione SSH non è root (id -u={0}); interrompo."
+    },
+    {
+      "source": "Uploading sshd-always-on.sh and running: sh {0} {1}",
+      "translation": "Caricamento di sshd-always-on.sh ed esecuzione: sh {0} {1}"
+    },
+    {
+      "source": "The {0} step returned exit code {1}.",
+      "translation": "Il passo {0} ha restituito il codice di uscita {1}."
+    },
+    {
+      "source": "sshd persistence {0} succeeded.",
+      "translation": "Persistenza di sshd: {0} riuscita."
+    },
+    {
+      "source": "The debug-stop routine was rejected ({0}); SSH is persistent but debug mode is still on.",
+      "translation": "La routine di stop del debug è stata rifiutata ({0}); SSH è persistente ma la modalità debug è ancora accesa."
+    },
+    {
+      "source": "After disabling debug mode: port 22 {0}; debug DTC B7F8E5 {1}.",
+      "translation": "Dopo lo spegnimento del debug: porta 22 {0}; errore B7F8E5 {1}."
+    },
+    {
+      "source": "The debug-stop routine was rejected: {0}",
+      "translation": "La routine di stop del debug è stata rifiutata: {0}"
+    },
+    {
+      "source": "Per-car key added to {0} on the unit.",
+      "translation": "Chiave dell’auto aggiunta a {0} sull’unità."
+    },
+    {
+      "source": "SSH connection failed while removing the dev key: {0}",
+      "translation": "Connessione SSH non riuscita durante la rimozione della chiave condivisa: {0}"
+    },
+    {
+      "source": "Could not find the bootstrap key ({0}); skipping unique-key step.",
+      "translation": "Chiave di partenza non trovata ({0}); salto il passo della chiave unica."
+    },
+    {
+      "source": "DONE: MGU SSH enabled - connect with root + {0}.",
+      "translation": "FATTO: SSH della MGU abilitato - accesso con root + {0}."
+    },
+    {
+      "source": "Flash mode: writing the {0} debug image.",
+      "translation": "Modalità flash: scrittura dell’immagine di debug {0}."
+    },
+    {
+      "source": "DONE: MGU flashed + SSH enabled - connect with root + {0}.",
+      "translation": "FATTO: MGU flashata + SSH abilitato - accesso con root + {0}."
+    },
+    {
+      "source": "Flash contract: {0} - frames: {1} | transfer parts: {2} | TransferData bytes: {3}",
+      "translation": "Contratto di flash: {0} - frame: {1} | parti di trasferimento: {2} | byte TransferData: {3}"
+    },
+    {
+      "source": "Waiting for the MGU to finish restarting before enrolling ({0} s)...",
+      "translation": "Attesa del riavvio completo della MGU prima della registrazione ({0} s)..."
+    },
+    {
+      "source": "Challenge identity: {0}",
+      "translation": "Identità del challenge: {0}"
+    },
+    {
+      "source": "Generated certificate: {0} bytes DER / {1} bytes PEM",
+      "translation": "Certificato generato: {0} byte DER / {1} byte PEM"
+    },
+    {
+      "source": "Enroll cycle {0}/5: certificate installed, 172A readback accepted.",
+      "translation": "Ciclo di registrazione {0}/5: certificato installato, rilettura 172A accettata."
+    },
+    {
+      "source": "Using the saved per-car key for this unit ({0}).",
+      "translation": "Uso la chiave salvata per questa unità ({0})."
+    },
+    {
+      "source": "Saved the previous key ({0}) to {1} before refreshing.",
+      "translation": "Chiave precedente ({0}) salvata in {1} prima dell’aggiornamento."
+    },
+    {
+      "source": "Connection info (MGU IP + ssh command) saved to {0}",
+      "translation": "Dati di connessione (IP della MGU + comando ssh) salvati in {0}"
+    },
+    {
+      "source": "Connect with: ssh -i \"{0}\" root@{1}",
+      "translation": "Accesso con: ssh -i \"{0}\" root@{1}"
+    },
+    {
+      "source": "Could not write connect.txt: {0}",
+      "translation": "Impossibile scrivere connect.txt: {0}"
+    },
+    {
+      "source": "MGU SSH enrollment: challenge {0}",
+      "translation": "Registrazione SSH della MGU: challenge {0}"
+    },
+    {
+      "source": "MGU SSH enrollment: certificate {0} bytes DER",
+      "translation": "Registrazione SSH della MGU: certificato di {0} byte DER"
+    },
+    {
+      "source": "WARNING: discovered VIN {0} differs from --vin {1} - double-check the VIN before flashing.",
+      "translation": "ATTENZIONE: il VIN rilevato {0} è diverso da quello inserito {1} - ricontrolla il VIN prima del flash."
+    },
+    {
+      "source": "Could not confirm the key was written{0}.",
+      "translation": "Impossibile confermare che la chiave sia stata scritta{0}."
+    },
+    {
+      "source": "Could not reach the installer release: {0}",
+      "translation": "Release dell’installer non raggiungibile: {0}"
+    },
+    {
+      "source": "Installer verified (sha256 {0}).",
+      "translation": "Installer verificato (sha256 {0})."
+    },
+    {
+      "source": "Store install failed: {0}",
+      "translation": "Installazione dello Store non riuscita: {0}"
+    },
+    {
+      "source": "Store install failed (installer exit {0}); see its messages above.",
+      "translation": "Installazione dello Store non riuscita (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
+    },
+    {
+      "source": "The head unit did not take the restart: {0}",
+      "translation": "La head unit non ha accettato il riavvio: {0}"
+    },
+    {
+      "source": "Root SSH OK on {0}.",
+      "translation": "Root SSH OK su {0}."
+    },
+    {
+      "source": "The head unit's coding is missing: {0}. This often happens after enabling SSH or flashing. Restore the head unit's coding from a backup (BimmerCode, E-Sys or ISTA) or have HU_MGU coded to the car, restart the head unit, then run the install again.",
+      "translation": "Manca la codifica della head unit ({0}). Succede spesso dopo l’attivazione di SSH o un flash. Ripristina la codifica da un backup (BimmerCode, E-Sys o ISTA) o fai codificare HU_MGU sull’auto, riavvia la head unit, poi ripeti l’installazione."
+    },
+    {
+      "source": "Latest Store version: {0}",
+      "translation": "Ultima versione dello Store: {0}"
+    },
+    {
+      "source": "Could not read the latest Store versions: {0}",
+      "translation": "Impossibile leggere le ultime versioni dello Store: {0}"
+    },
+    {
+      "source": "Store {0} installed: {1} updates available.",
+      "translation": "Store {0} installato: {1} aggiornamenti disponibili."
+    },
+    {
+      "source": "Store {0} installed: everything is up to date.",
+      "translation": "Store {0} installato: è tutto aggiornato."
+    },
+    {
+      "source": "Store check failed: {0}",
+      "translation": "Controllo dello Store non riuscito: {0}"
+    },
+    {
+      "source": "Store {0} installed: 1 update available.",
+      "translation": "Store {0} installato: 1 aggiornamento disponibile."
+    },
+    {
+      "source": "Store removal failed: {0}",
+      "translation": "Rimozione dello Store non riuscita: {0}"
+    },
+    {
+      "source": "Store removal not finished (installer exit {0}); see its messages above.",
+      "translation": "Rimozione dello Store non completata (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
+    },
+    {
+      "source": "Using the car's Wi-Fi hotspot: head unit at {0}.",
+      "translation": "Uso l’hotspot Wi-Fi dell’auto: head unit su {0}."
+    },
+    {
+      "source": "No ENET gateway, but the head unit answers on the car's Wi-Fi hotspot ({0}).",
+      "translation": "Nessun gateway ENET, ma la head unit risponde sull’hotspot Wi-Fi dell’auto ({0})."
+    },
+    {
+      "source": "MGU serial number not read: {0}",
+      "translation": "Seriale della MGU non letto: {0}"
+    },
+    {
+      "source": "MGU hardware: {0} | serial: {1}",
+      "translation": "Hardware MGU: {0} | seriale: {1}"
+    },
+    {
+      "source": "SSH key file not found: {0}",
+      "translation": "File della chiave SSH non trovato: {0}"
+    },
+    {
+      "source": "MGU Plus {0} is available (this is {1}).",
+      "translation": "È disponibile MGU Plus {0} (questa è la {1})."
+    },
+    {
+      "source": "This unit is an NBT/EVO head unit (BTLD {0}); this tool only speaks MGU.",
+      "translation": "Questa head unit è una NBT/EVO (BTLD {0}): il programma funziona solo con le MGU."
+    },
+    {
+      "source": "Coding backup written to {0}",
+      "translation": "Backup della codifica scritto in {0}"
+    }
+  ],
+  "log_values": {
+    "PRESENT": "PRESENTE",
+    "absent": "assente",
+    "ON": "ACCESO",
+    "OFF": "SPENTO",
+    "OFF (or not reported)": "SPENTO (o non riportato)",
+    "is STILL OPEN": "è ANCORA APERTA",
+    "is CLOSED - persistence may not have taken": "è CHIUSA - la persistenza potrebbe non aver funzionato",
+    "cleared": "cancellato",
+    "STILL PRESENT": "ANCORA PRESENTE",
+    "unknown (not reported)": "sconosciuto (non riportato)",
+    "install": "installazione",
+    "removal": "rimozione",
+    "it holds default values": "contiene i valori di default",
+    "it is not valid": "non è valida"
+  }
+}
