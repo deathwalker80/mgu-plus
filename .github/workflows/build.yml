@@ -3,8 +3,8 @@ name: Build MGU Plus
 # Ogni push su main costruisce l'exe su Windows (con i test). Se la versione
 # scritta in gui.py (APP_VERSION) non ha ancora una release, la pubblica con lo
 # zip e il tag vX.Y.Z. Con la riga <!-- prerelease --> in RELEASE_NOTES.md esce
-# come pre-release: il controllo aggiornamenti dentro MGU Plus vede solo le
-# release definitive (togliere la spunta "pre-release" su GitHub dopo le prove).
+# come pre-release: il controllo aggiornamenti dentro MGU Plus la segnala come
+# beta, con un avviso (togliere la spunta "pre-release" su GitHub dopo le prove).
 on:
   push:
     branches: [main]

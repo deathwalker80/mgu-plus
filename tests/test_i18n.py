@@ -363,15 +363,36 @@ class ProgramUpdateTests(unittest.TestCase):
         return patch.object(gui.urllib.request, 'urlopen', urlopen)
 
     def test_outcomes(self):
-        self.assertEqual(gui.UPDATE_API, 'https://api.github.com/repos/deathwalker80/mgu-plus/releases/latest')
-        with self.fake({'tag_name': 'v1.4.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.3.0'), ('newer', '1.4.0', 'https://example/r', None))
-        with self.fake({'tag_name': 'v1.3.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.3.0')[0], 'current')
+        self.assertEqual(gui.UPDATE_API, 'https://api.github.com/repos/deathwalker80/mgu-plus/releases?per_page=30')
+        releases = [{'tag_name': 'v1.3.0', 'prerelease': True, 'html_url': 'https://example/130'},
+                    {'tag_name': 'v1.4.0', 'prerelease': True, 'html_url': 'https://example/140'},
+                    {'tag_name': 'v1.5.0', 'draft': True, 'html_url': 'https://example/draft'},
+                    {'tag_name': 'v1.2.0', 'prerelease': False, 'html_url': 'https://example/120'}]
+        with self.fake(releases):
+            self.assertEqual(gui.check_program_update(current='1.3.1'), ('newer', '1.4.0', 'https://example/140', None, True))
+        with self.fake(releases[:1] + [{'tag_name': 'v1.4.0', 'html_url': 'https://example/140'}]):
+            self.assertEqual(gui.check_program_update(current='1.3.1'), ('newer', '1.4.0', 'https://example/140', None, False))
+        with self.fake(releases[:2]):
+            self.assertEqual(gui.check_program_update(current='1.4.0')[0], 'current')
+        with self.fake([]):
+            self.assertEqual(gui.check_program_update()[0], 'none')
         with self.fake(error=gui.urllib.error.HTTPError('u', 404, 'Not Found', {}, None)):
             self.assertEqual(gui.check_program_update()[0], 'none')
         with self.fake(error=gui.urllib.error.URLError('offline')):
-            self.assertEqual(gui.check_program_update(), ('error', None, None, 'offline'))
+            self.assertEqual(gui.check_program_update(), ('error', None, None, 'offline', False))
+
+    def test_beta_is_announced_with_a_warning(self):
+        root = gui.tk.Tk()
+        root.withdraw()
+        try:
+            app = gui.App(root, auto_check=False)
+            with patch.object(gui.messagebox, 'askyesno', return_value=False) as ask:
+                app._program_update_done(('newer', '1.4.0', 'https://example/140', None, True))
+            self.assertIn('beta da provare', ask.call_args.args[1])
+            self.assertIn('BETA', ask.call_args.args[1])
+            self.assertEqual(ask.call_args.kwargs['icon'], 'warning')
+        finally:
+            root.destroy()
 
 
 if __name__ == '__main__':

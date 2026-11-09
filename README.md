@@ -1,4 +1,4 @@
-> **MGU Plus 1.3.0** - this copy is MGU Plus: an Italian, single-window GUI
+> **MGU Plus 1.3.1** - this copy is MGU Plus: an Italian, single-window GUI
 > (`gui.py`) over this tool that also installs, updates and removes
 > [mgu-store](https://github.com/robertnisipeanu/mgu-store) over the root SSH
 > access, shows the installed against the newest published versions, and works
@@ -17,7 +17,7 @@
 > to main builds the exe on Windows (`.github/workflows/build.yml`); a version
 > (`APP_VERSION` in gui.py) without a release yet is published as release `vX.Y.Z`
 > (pre-release while `RELEASE_NOTES.md` has `<!-- prerelease -->`), the one MGU Plus
-> checks for updates.
+> checks for updates (pre-releases are announced as beta, with a warning).
 
 **English** | [简体中文翻译](README.zh-CN.md)
 

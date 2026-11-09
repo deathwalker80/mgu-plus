@@ -1,9 +1,12 @@
 <!-- prerelease -->
-## MGU Plus 1.3.0 (beta, da provare in auto)
+## MGU Plus 1.3.1 (beta, da provare in auto)
 
 Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. Tutto in una schermata, in italiano.
 
-**Da scaricare:** `MGU-Plus-windows-1.3.0.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+**Da scaricare:** `MGU-Plus-windows-1.3.1.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+
+### Novità della 1.3.1
+- "Aggiornamenti MGU Plus" segnala anche le versioni beta (pre-release), con un avviso che non sono ancora provate in auto.
 
 ### Novità della 1.3.0
 - **Ripristino della codifica senza E-Sys (SPERIMENTALE):** riscrive sulla MGU, via ENET, i blocchi del "Backup codifica" di quella stessa auto, li rilegge uno per uno e si ferma al primo rifiuto; alla fine controlla che la MGU riporti di nuovo la sua CAFD. Va provato con BimmerCode o E-Sys a portata di mano.

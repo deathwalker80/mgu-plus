@@ -60,14 +60,14 @@ from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
 STORE_REPO = "robertnisipeanu/mgu-store"
 # Dove si pubblicano le versioni di MGU Plus (GitHub releases del fork).
 UPDATE_REPO = "deathwalker80/mgu-plus"
-UPDATE_API = "https://api.github.com/repos/%s/releases/latest" % UPDATE_REPO
+UPDATE_API = "https://api.github.com/repos/%s/releases?per_page=30" % UPDATE_REPO
 
 ARCHES = (ID7, ID8_BDC3, ID8_BCP)
 # The flash contract MUST match the head unit. Flashing an ID8 with the ID7
@@ -1116,26 +1116,32 @@ class App:
 
     def _program_update_done(self, result):
         self._busy(False)
-        kind, version, url, detail = result
+        kind, version, url, detail, beta = result
         if kind == "newer":
-            self._append("MGU Plus %s is available (this is %s).\n" % (version, APP_VERSION))
-            if messagebox.askyesno("Aggiornamento disponibile",
-                                   "È disponibile MGU Plus %s (questa è la %s).\n\nAprire la pagina di "
-                                   "download?" % (version, APP_VERSION)):
+            label = "%s (beta da provare)" % version if beta else version
+            self._append("MGU Plus %s is available (this is %s).\n" % (label, APP_VERSION))
+            text = "È disponibile MGU Plus %s (questa è la %s)." % (label, APP_VERSION)
+            if beta:
+                text += ("\n\nATTENZIONE: è una versione BETA, non ancora provata in auto. Usala solo se puoi "
+                         "rimediare da solo (BimmerCode / E-Sys) se qualcosa va storto.")
+            if messagebox.askyesno("Aggiornamento disponibile", text + "\n\nAprire la pagina di download?",
+                                   icon="warning" if beta else "question"):
                 webbrowser.open(url)
         elif kind == "current":
-            messagebox.showinfo("Nessun aggiornamento", "Hai già l'ultima versione di MGU Plus (%s)." % APP_VERSION)
+            messagebox.showinfo("Nessun aggiornamento", "Hai già l'ultima versione di MGU Plus (%s%s)."
+                                % (APP_VERSION, ", beta" if beta else ""))
         elif kind == "none":
             messagebox.showinfo("Nessun aggiornamento", "Su GitHub (%s) non è ancora pubblicata nessuna versione "
-                                "definitiva di MGU Plus." % UPDATE_REPO)
+                                "di MGU Plus." % UPDATE_REPO)
         else:
             messagebox.showwarning("Controllo non riuscito", "Impossibile controllare gli aggiornamenti:\n%s"
                                    % detail)
 
 
 def check_program_update(api=UPDATE_API, current=APP_VERSION):
-    """("newer" | "current" | "none" | "error", versione, pagina, dettaglio) per
-    l'ultima release definitiva (non pre-release) del repository di MGU Plus."""
+    """("newer" | "current" | "none" | "error", versione, pagina, dettaglio, beta)
+    per la release più recente del repository di MGU Plus, pre-release (beta)
+    comprese: beta è True quando quella release è segnata come pre-release."""
     request = urllib.request.Request(api, headers={"User-Agent": "MGU-Plus",
                                                    "Accept": "application/vnd.github+json"})
     try:
@@ -1143,18 +1149,21 @@ def check_program_update(api=UPDATE_API, current=APP_VERSION):
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            return ("none", None, None, None)
-        return ("error", None, None, "HTTP %d" % e.code)
+            return ("none", None, None, None, False)
+        return ("error", None, None, "HTTP %d" % e.code, False)
     except (urllib.error.URLError, OSError, ValueError) as e:
-        return ("error", None, None, str(getattr(e, "reason", e)))
-    tag = str(data.get("tag_name") or "").strip()
-    if not tag:
-        return ("none", None, None, None)
-    version = tag.lstrip("vV")
-    url = data.get("html_url") or "https://github.com/%s/releases" % UPDATE_REPO
+        return ("error", None, None, str(getattr(e, "reason", e)), False)
+    releases = [r for r in (data if isinstance(data, list) else [data])
+                if isinstance(r, dict) and not r.get("draft") and str(r.get("tag_name") or "").strip()]
+    if not releases:
+        return ("none", None, None, None, False)
+    best = max(releases, key=lambda r: store_mod.parse_version(str(r["tag_name"]).strip().lstrip("vV")))
+    version = str(best["tag_name"]).strip().lstrip("vV")
+    url = best.get("html_url") or "https://github.com/%s/releases" % UPDATE_REPO
+    beta = bool(best.get("prerelease"))
     if store_mod.parse_version(version) > store_mod.parse_version(current):
-        return ("newer", version, url, None)
-    return ("current", version, url, None)
+        return ("newer", version, url, None, beta)
+    return ("current", version, url, None, beta)
 
 
 def main():
