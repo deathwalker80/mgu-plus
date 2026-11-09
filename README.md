@@ -12,9 +12,11 @@
 > **Upstream tracking:** `upstream.json` records the idrive7-8-ssh-root release/commit
 > and the mgu-store installer this build follows; the daily workflow
 > `.github/workflows/upstream-check.yml` opens an issue for every new upstream version,
-> listing its commits, changed files and changed command-line parameters. A tag
-> `vX.Y.Z` (or `vX.Y.Z-betaN`, published as a pre-release) builds the exe on Windows
-> (`.github/workflows/build.yml`) and publishes the release that MGU Plus checks for updates.
+> listing its commits, changed files and changed command-line parameters. Every push
+> to main builds the exe on Windows (`.github/workflows/build.yml`); a version
+> (`APP_VERSION` in gui.py) without a release yet is published as release `vX.Y.Z`
+> (pre-release while `RELEASE_NOTES.md` has `<!-- prerelease -->`), the one MGU Plus
+> checks for updates.
 
 **English** | [简体中文翻译](README.zh-CN.md)
 

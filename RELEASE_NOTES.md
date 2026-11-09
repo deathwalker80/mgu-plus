@@ -1,4 +1,5 @@
-## MGU Plus 1.2.0
+<!-- prerelease -->
+## MGU Plus 1.2.0 (beta, da provare in auto)
 
 Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. Tutto in una schermata, in italiano.
 
