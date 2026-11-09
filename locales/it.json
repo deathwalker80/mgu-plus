@@ -192,208 +192,89 @@
     "Aborted.": "Annullato.",
     "Refusing to flash: this unit's BTLD is not 00003F36, so it is outside the supported MGU ID7/ID8 debug catalog. (Use --force to override.)": "Flash rifiutato: il BTLD di questa unità non è 00003F36, quindi non è una MGU ID7/ID8 supportata.",
     "WARNING: the coding read is incomplete or did not verify - do not rely on it as your only backup.": "ATTENZIONE: la lettura della codifica è incompleta o non verificata - non farci affidamento come unico backup.",
-    "Done. Copy this folder off the machine before flashing.": "FATTO. Copia questa cartella anche fuori dal PC prima del flash."
+    "Done. Copy this folder off the machine before flashing.": "FATTO. Copia questa cartella anche fuori dal PC prima del flash.",
+    "DONE: dry run, nothing sent to the head unit.": "FATTO: prova a vuoto, nulla inviato alla head unit."
   },
   "logs": [
     {
-      "source": "Discovery failed: {0}",
-      "translation": "Ricerca non riuscita: {0}"
+      "source": "The head unit's coding is missing: {0}. This often happens after enabling SSH or flashing. Restore the head unit's coding from a backup (BimmerCode, E-Sys or ISTA) or have HU_MGU coded to the car, restart the head unit, then run the install again.",
+      "translation": "Manca la codifica della head unit ({0}). Succede spesso dopo l’attivazione di SSH o un flash. Ripristina la codifica da un backup (BimmerCode, E-Sys o ISTA) o fai codificare HU_MGU sull’auto, riavvia la head unit, poi ripeti l’installazione."
     },
     {
-      "source": "Found gateway {0} | VIN: {1}",
-      "translation": "Trovato il gateway {0} | VIN: {1}"
-    },
-    {
-      "source": "({0} gateways responded; using the first)",
-      "translation": "(hanno risposto {0} gateway; uso il primo)"
-    },
-    {
-      "source": "[{0} finished, exit {1}]",
-      "translation": "[{0} terminato, uscita {1}]"
-    },
-    {
-      "source": "ERROR: {0}",
-      "translation": "ERRORE: {0}"
-    },
-    {
-      "source": "FAILED: {0}",
-      "translation": "NON RIUSCITO: {0}"
-    },
-    {
-      "source": "ENET discovery broadcast -> {0}:{1} (from {2})",
-      "translation": "Broadcast di ricerca ENET -> {0}:{1} (da {2})"
-    },
-    {
-      "source": "Skipped {0}: {1}",
-      "translation": "Saltato {0}: {1}"
-    },
-    {
-      "source": "Ignored a UDP {0} reply from {1} (no BMWVIN marker).",
-      "translation": "Ignorata una risposta UDP {0} da {1} (manca il marcatore BMWVIN)."
-    },
-    {
-      "source": "Found {0} ENET gateways:",
-      "translation": "Trovati {0} gateway ENET:"
-    },
-    {
-      "source": "Connecting to ENET gateway {0}",
-      "translation": "Connessione al gateway ENET {0}"
-    },
-    {
-      "source": "SVK was not decoded: {0}",
-      "translation": "SVK non decodificato: {0}"
-    },
-    {
-      "source": "MGU IP: {0} | netmask: {1}",
-      "translation": "IP della MGU: {0} | netmask: {1}"
-    },
-    {
-      "source": "MGU IP was not decoded: {0}",
-      "translation": "IP della MGU non decodificato: {0}"
-    },
-    {
-      "source": "MGU IP override: {0}",
-      "translation": "IP della MGU indicato a mano: {0}"
-    },
-    {
-      "source": "MGU SSH port {0} is open ({1} ms).",
-      "translation": "Porta SSH {0} della MGU aperta ({1} ms)."
-    },
-    {
-      "source": "MGU SSH port {0} is not open ({1} ms).",
-      "translation": "Porta SSH {0} della MGU chiusa ({1} ms)."
-    },
-    {
-      "source": "probe retry {0}/{1}...",
-      "translation": "nuovo tentativo {0}/{1}..."
-    },
-    {
-      "source": "DTC B7F8E5 (Debugging active / SSH is active!!!): {0}",
-      "translation": "Errore B7F8E5 (debug attivo / SSH attivo): {0}"
-    },
-    {
-      "source": "DTC B7F8E5 (debug/SSH active): {0}",
-      "translation": "Errore B7F8E5 (debug/SSH attivo): {0}"
-    },
-    {
-      "source": "Status: debug/SSH-open state is {0}",
-      "translation": "Stato: debug/SSH {0}"
-    },
-    {
-      "source": "Close routine result: {0}",
-      "translation": "Esito della routine di chiusura: {0}"
+      "source": "WARNING: {0} blocks written, but the head unit still reports CAFD {1}: finish with E-Sys (CAFD injection) and keep the session log.",
+      "translation": "ATTENZIONE: {0} blocchi scritti, ma la head unit riporta ancora la CAFD {1}: completa con E-Sys (inserimento CAFD) e conserva il registro della sessione."
     },
     {
       "source": "Initial SSH connection unavailable at {0}:22 - restarting MGU (11 01) and waiting 15 seconds.",
       "translation": "Connessione SSH iniziale non disponibile su {0}:22 - riavvio la MGU (11 01) e attendo 15 secondi."
     },
     {
-      "source": "MGU restart request did not complete cleanly: {0}",
-      "translation": "La richiesta di riavvio della MGU non si è chiusa correttamente: {0}"
-    },
-    {
-      "source": "diag not back yet after restart ({0})",
-      "translation": "la diagnosi non risponde ancora dopo il riavvio ({0})"
-    },
-    {
-      "source": "Verifying SSH login as root with the recovered identity{0}...",
-      "translation": "Verifica dell’accesso SSH come root con l’identità recuperata{0}..."
-    },
-    {
-      "source": "SSH OK as root: {0}",
-      "translation": "SSH OK come root: {0}"
-    },
-    {
-      "source": "SSH not answering yet ({0}) - retrying in 8 s...",
-      "translation": "SSH non risponde ancora ({0}) - riprovo tra 8 s..."
-    },
-    {
-      "source": "SSH verification failed: {0}",
-      "translation": "Verifica SSH non riuscita: {0}"
-    },
-    {
-      "source": "No saved key found in {0}",
-      "translation": "Nessuna chiave salvata in {0}"
-    },
-    {
-      "source": "SSH connection failed: {0}",
-      "translation": "Connessione SSH non riuscita: {0}"
-    },
-    {
-      "source": "The SSH session is not root (id -u={0}); aborting.",
-      "translation": "La sessione SSH non è root (id -u={0}); interrompo."
-    },
-    {
-      "source": "Uploading sshd-always-on.sh and running: sh {0} {1}",
-      "translation": "Caricamento di sshd-always-on.sh ed esecuzione: sh {0} {1}"
-    },
-    {
-      "source": "The {0} step returned exit code {1}.",
-      "translation": "Il passo {0} ha restituito il codice di uscita {1}."
-    },
-    {
-      "source": "sshd persistence {0} succeeded.",
-      "translation": "Persistenza di sshd: {0} riuscita."
+      "source": "FAILED: no verified coding backup for VIN {0} in data/preflight; run \"Backup codifica\" first.",
+      "translation": "NON RIUSCITO: nessun backup verificato della codifica per il VIN {0} in data\\preflight; fai prima \"Backup codifica\"."
     },
     {
       "source": "The debug-stop routine was rejected ({0}); SSH is persistent but debug mode is still on.",
       "translation": "La routine di stop del debug è stata rifiutata ({0}); SSH è persistente ma la modalità debug è ancora accesa."
     },
     {
-      "source": "After disabling debug mode: port 22 {0}; debug DTC B7F8E5 {1}.",
-      "translation": "Dopo lo spegnimento del debug: porta 22 {0}; errore B7F8E5 {1}."
+      "source": "WARNING: discovered VIN {0} differs from --vin {1} - double-check the VIN before flashing.",
+      "translation": "ATTENZIONE: il VIN rilevato {0} è diverso da quello inserito {1} - ricontrolla il VIN prima del flash."
     },
     {
-      "source": "The debug-stop routine was rejected: {0}",
-      "translation": "La routine di stop del debug è stata rifiutata: {0}"
-    },
-    {
-      "source": "Per-car key added to {0} on the unit.",
-      "translation": "Chiave dell’auto aggiunta a {0} sull’unità."
-    },
-    {
-      "source": "SSH connection failed while removing the dev key: {0}",
-      "translation": "Connessione SSH non riuscita durante la rimozione della chiave condivisa: {0}"
-    },
-    {
-      "source": "Could not find the bootstrap key ({0}); skipping unique-key step.",
-      "translation": "Chiave di partenza non trovata ({0}); salto il passo della chiave unica."
-    },
-    {
-      "source": "DONE: MGU SSH enabled - connect with root + {0}.",
-      "translation": "FATTO: SSH della MGU abilitato - accesso con root + {0}."
-    },
-    {
-      "source": "Flash mode: writing the {0} debug image.",
-      "translation": "Modalità flash: scrittura dell’immagine di debug {0}."
-    },
-    {
-      "source": "DONE: MGU flashed + SSH enabled - connect with root + {0}.",
-      "translation": "FATTO: MGU flashata + SSH abilitato - accesso con root + {0}."
+      "source": "No ENET gateway, but the head unit answers on the car's Wi-Fi hotspot ({0}).",
+      "translation": "Nessun gateway ENET, ma la head unit risponde sull’hotspot Wi-Fi dell’auto ({0})."
     },
     {
       "source": "Flash contract: {0} - frames: {1} | transfer parts: {2} | TransferData bytes: {3}",
       "translation": "Contratto di flash: {0} - frame: {1} | parti di trasferimento: {2} | byte TransferData: {3}"
     },
     {
+      "source": "Store removal not finished (installer exit {0}); see its messages above.",
+      "translation": "Rimozione dello Store non completata (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
+    },
+    {
+      "source": "This unit is an NBT/EVO head unit (BTLD {0}); this tool only speaks MGU.",
+      "translation": "Questa head unit è una NBT/EVO (BTLD {0}): il programma funziona solo con le MGU."
+    },
+    {
       "source": "Waiting for the MGU to finish restarting before enrolling ({0} s)...",
       "translation": "Attesa del riavvio completo della MGU prima della registrazione ({0} s)..."
     },
     {
-      "source": "Challenge identity: {0}",
-      "translation": "Identità del challenge: {0}"
-    },
-    {
-      "source": "Generated certificate: {0} bytes DER / {1} bytes PEM",
-      "translation": "Certificato generato: {0} byte DER / {1} byte PEM"
+      "source": "DONE: coding restored ({0} blocks) and the head unit reports CAFD {1}.",
+      "translation": "FATTO: codifica ripristinata ({0} blocchi) e la head unit riporta la CAFD {1}."
     },
     {
       "source": "Enroll cycle {0}/5: certificate installed, 172A readback accepted.",
       "translation": "Ciclo di registrazione {0}/5: certificato installato, rilettura 172A accettata."
     },
     {
-      "source": "Using the saved per-car key for this unit ({0}).",
-      "translation": "Uso la chiave salvata per questa unità ({0})."
+      "source": "Store install failed (installer exit {0}); see its messages above.",
+      "translation": "Installazione dello Store non riuscita (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
+    },
+    {
+      "source": "Could not find the bootstrap key ({0}); skipping unique-key step.",
+      "translation": "Chiave di partenza non trovata ({0}); salto il passo della chiave unica."
+    },
+    {
+      "source": "Verifying SSH login as root with the recovered identity{0}...",
+      "translation": "Verifica dell’accesso SSH come root con l’identità recuperata{0}..."
+    },
+    {
+      "source": "After disabling debug mode: port 22 {0}; debug DTC B7F8E5 {1}.",
+      "translation": "Dopo lo spegnimento del debug: porta 22 {0}; errore B7F8E5 {1}."
+    },
+    {
+      "source": "DONE: MGU flashed + SSH enabled - connect with root + {0}.",
+      "translation": "FATTO: MGU flashata + SSH abilitato - accesso con root + {0}."
+    },
+    {
+      "source": "DTC B7F8E5 (Debugging active / SSH is active!!!): {0}",
+      "translation": "Errore B7F8E5 (debug attivo / SSH attivo): {0}"
+    },
+    {
+      "source": "SSH connection failed while removing the dev key: {0}",
+      "translation": "Connessione SSH non riuscita durante la rimozione della chiave condivisa: {0}"
     },
     {
       "source": "Saved the previous key ({0}) to {1} before refreshing.",
@@ -404,6 +285,130 @@
       "translation": "Dati di connessione (IP della MGU + comando ssh) salvati in {0}"
     },
     {
+      "source": "The SSH session is not root (id -u={0}); aborting.",
+      "translation": "La sessione SSH non è root (id -u={0}); interrompo."
+    },
+    {
+      "source": "Ignored a UDP {0} reply from {1} (no BMWVIN marker).",
+      "translation": "Ignorata una risposta UDP {0} da {1} (manca il marcatore BMWVIN)."
+    },
+    {
+      "source": "MGU restart request did not complete cleanly: {0}",
+      "translation": "La richiesta di riavvio della MGU non si è chiusa correttamente: {0}"
+    },
+    {
+      "source": "Generated certificate: {0} bytes DER / {1} bytes PEM",
+      "translation": "Certificato generato: {0} byte DER / {1} byte PEM"
+    },
+    {
+      "source": "SSH not answering yet ({0}) - retrying in 8 s...",
+      "translation": "SSH non risponde ancora ({0}) - riprovo tra 8 s..."
+    },
+    {
+      "source": "Uploading sshd-always-on.sh and running: sh {0} {1}",
+      "translation": "Caricamento di sshd-always-on.sh ed esecuzione: sh {0} {1}"
+    },
+    {
+      "source": "DONE: MGU SSH enabled - connect with root + {0}.",
+      "translation": "FATTO: SSH della MGU abilitato - accesso con root + {0}."
+    },
+    {
+      "source": "Using the saved per-car key for this unit ({0}).",
+      "translation": "Uso la chiave salvata per questa unità ({0})."
+    },
+    {
+      "source": "Using the car's Wi-Fi hotspot: head unit at {0}.",
+      "translation": "Uso l’hotspot Wi-Fi dell’auto: head unit su {0}."
+    },
+    {
+      "source": "Store {0} installed: everything is up to date.",
+      "translation": "Store {0} installato: è tutto aggiornato."
+    },
+    {
+      "source": "MGU SSH enrollment: certificate {0} bytes DER",
+      "translation": "Registrazione SSH della MGU: certificato di {0} byte DER"
+    },
+    {
+      "source": "Could not read the latest Store versions: {0}",
+      "translation": "Impossibile leggere le ultime versioni dello Store: {0}"
+    },
+    {
+      "source": "The head unit did not take the restart: {0}",
+      "translation": "La head unit non ha accettato il riavvio: {0}"
+    },
+    {
+      "source": "Could not reach the installer release: {0}",
+      "translation": "Release dell’installer non raggiungibile: {0}"
+    },
+    {
+      "source": "({0} gateways responded; using the first)",
+      "translation": "(hanno risposto {0} gateway; uso il primo)"
+    },
+    {
+      "source": "Could not confirm the key was written{0}.",
+      "translation": "Impossibile confermare che la chiave sia stata scritta{0}."
+    },
+    {
+      "source": "ENET discovery broadcast -> {0}:{1} (from {2})",
+      "translation": "Broadcast di ricerca ENET -> {0}:{1} (da {2})"
+    },
+    {
+      "source": "The debug-stop routine was rejected: {0}",
+      "translation": "La routine di stop del debug è stata rifiutata: {0}"
+    },
+    {
+      "source": "Flash mode: writing the {0} debug image.",
+      "translation": "Modalità flash: scrittura dell’immagine di debug {0}."
+    },
+    {
+      "source": "Store {0} installed: {1} updates available.",
+      "translation": "Store {0} installato: {1} aggiornamenti disponibili."
+    },
+    {
+      "source": "Store {0} installed: 1 update available.",
+      "translation": "Store {0} installato: 1 aggiornamento disponibile."
+    },
+    {
+      "source": "FAILED: coding backup not readable: {0}",
+      "translation": "NON RIUSCITO: backup della codifica non leggibile: {0}"
+    },
+    {
+      "source": "diag not back yet after restart ({0})",
+      "translation": "la diagnosi non risponde ancora dopo il riavvio ({0})"
+    },
+    {
+      "source": "Per-car key added to {0} on the unit.",
+      "translation": "Chiave dell’auto aggiunta a {0} sull’unità."
+    },
+    {
+      "source": "MGU Plus {0} is available (this is {1}).",
+      "translation": "È disponibile MGU Plus {0} (questa è la {1})."
+    },
+    {
+      "source": "MGU SSH port {0} is not open ({1} ms).",
+      "translation": "Porta SSH {0} della MGU chiusa ({1} ms)."
+    },
+    {
+      "source": "Status: debug/SSH-open state is {0}",
+      "translation": "Stato: debug/SSH {0}"
+    },
+    {
+      "source": "FAILED: coding restore stopped: {0}",
+      "translation": "NON RIUSCITO: ripristino della codifica fermato: {0}"
+    },
+    {
+      "source": "DTC B7F8E5 (debug/SSH active): {0}",
+      "translation": "Errore B7F8E5 (debug/SSH attivo): {0}"
+    },
+    {
+      "source": "The {0} step returned exit code {1}.",
+      "translation": "Il passo {0} ha restituito il codice di uscita {1}."
+    },
+    {
+      "source": "MGU SSH enrollment: challenge {0}",
+      "translation": "Registrazione SSH della MGU: challenge {0}"
+    },
+    {
       "source": "Connect with: ssh -i \"{0}\" root@{1}",
       "translation": "Accesso con: ssh -i \"{0}\" root@{1}"
     },
@@ -412,112 +417,128 @@
       "translation": "Impossibile scrivere connect.txt: {0}"
     },
     {
-      "source": "MGU SSH enrollment: challenge {0}",
-      "translation": "Registrazione SSH della MGU: challenge {0}"
-    },
-    {
-      "source": "MGU SSH enrollment: certificate {0} bytes DER",
-      "translation": "Registrazione SSH della MGU: certificato di {0} byte DER"
-    },
-    {
-      "source": "WARNING: discovered VIN {0} differs from --vin {1} - double-check the VIN before flashing.",
-      "translation": "ATTENZIONE: il VIN rilevato {0} è diverso da quello inserito {1} - ricontrolla il VIN prima del flash."
-    },
-    {
-      "source": "Could not confirm the key was written{0}.",
-      "translation": "Impossibile confermare che la chiave sia stata scritta{0}."
-    },
-    {
-      "source": "Could not reach the installer release: {0}",
-      "translation": "Release dell’installer non raggiungibile: {0}"
-    },
-    {
       "source": "Installer verified (sha256 {0}).",
       "translation": "Installer verificato (sha256 {0})."
     },
     {
-      "source": "Store install failed: {0}",
-      "translation": "Installazione dello Store non riuscita: {0}"
+      "source": "MGU SSH port {0} is open ({1} ms).",
+      "translation": "Porta SSH {0} della MGU aperta ({1} ms)."
     },
     {
-      "source": "Store install failed (installer exit {0}); see its messages above.",
-      "translation": "Installazione dello Store non riuscita (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
-    },
-    {
-      "source": "The head unit did not take the restart: {0}",
-      "translation": "La head unit non ha accettato il riavvio: {0}"
-    },
-    {
-      "source": "Root SSH OK on {0}.",
-      "translation": "Root SSH OK su {0}."
-    },
-    {
-      "source": "The head unit's coding is missing: {0}. This often happens after enabling SSH or flashing. Restore the head unit's coding from a backup (BimmerCode, E-Sys or ISTA) or have HU_MGU coded to the car, restart the head unit, then run the install again.",
-      "translation": "Manca la codifica della head unit ({0}). Succede spesso dopo l’attivazione di SSH o un flash. Ripristina la codifica da un backup (BimmerCode, E-Sys o ISTA) o fai codificare HU_MGU sull’auto, riavvia la head unit, poi ripeti l’installazione."
-    },
-    {
-      "source": "Latest Store version: {0}",
-      "translation": "Ultima versione dello Store: {0}"
-    },
-    {
-      "source": "Could not read the latest Store versions: {0}",
-      "translation": "Impossibile leggere le ultime versioni dello Store: {0}"
-    },
-    {
-      "source": "Store {0} installed: {1} updates available.",
-      "translation": "Store {0} installato: {1} aggiornamenti disponibili."
-    },
-    {
-      "source": "Store {0} installed: everything is up to date.",
-      "translation": "Store {0} installato: è tutto aggiornato."
-    },
-    {
-      "source": "Store check failed: {0}",
-      "translation": "Controllo dello Store non riuscito: {0}"
-    },
-    {
-      "source": "Store {0} installed: 1 update available.",
-      "translation": "Store {0} installato: 1 aggiornamento disponibile."
-    },
-    {
-      "source": "Store removal failed: {0}",
-      "translation": "Rimozione dello Store non riuscita: {0}"
-    },
-    {
-      "source": "Store removal not finished (installer exit {0}); see its messages above.",
-      "translation": "Rimozione dello Store non completata (uscita dell’installer {0}); vedi i suoi messaggi qui sopra."
-    },
-    {
-      "source": "Using the car's Wi-Fi hotspot: head unit at {0}.",
-      "translation": "Uso l’hotspot Wi-Fi dell’auto: head unit su {0}."
-    },
-    {
-      "source": "No ENET gateway, but the head unit answers on the car's Wi-Fi hotspot ({0}).",
-      "translation": "Nessun gateway ENET, ma la head unit risponde sull’hotspot Wi-Fi dell’auto ({0})."
+      "source": "sshd persistence {0} succeeded.",
+      "translation": "Persistenza di sshd: {0} riuscita."
     },
     {
       "source": "MGU serial number not read: {0}",
       "translation": "Seriale della MGU non letto: {0}"
     },
     {
+      "source": "Connecting to ENET gateway {0}",
+      "translation": "Connessione al gateway ENET {0}"
+    },
+    {
+      "source": "SSH verification failed: {0}",
+      "translation": "Verifica SSH non riuscita: {0}"
+    },
+    {
       "source": "MGU hardware: {0} | serial: {1}",
       "translation": "Hardware MGU: {0} | seriale: {1}"
+    },
+    {
+      "source": "Coding backup written to {0}",
+      "translation": "Backup della codifica scritto in {0}"
+    },
+    {
+      "source": "MGU IP was not decoded: {0}",
+      "translation": "IP della MGU non decodificato: {0}"
     },
     {
       "source": "SSH key file not found: {0}",
       "translation": "File della chiave SSH non trovato: {0}"
     },
     {
-      "source": "MGU Plus {0} is available (this is {1}).",
-      "translation": "È disponibile MGU Plus {0} (questa è la {1})."
+      "source": "SSH connection failed: {0}",
+      "translation": "Connessione SSH non riuscita: {0}"
     },
     {
-      "source": "This unit is an NBT/EVO head unit (BTLD {0}); this tool only speaks MGU.",
-      "translation": "Questa head unit è una NBT/EVO (BTLD {0}): il programma funziona solo con le MGU."
+      "source": "Found gateway {0} | VIN: {1}",
+      "translation": "Trovato il gateway {0} | VIN: {1}"
     },
     {
-      "source": "Coding backup written to {0}",
-      "translation": "Backup della codifica scritto in {0}"
+      "source": "Close routine result: {0}",
+      "translation": "Esito della routine di chiusura: {0}"
+    },
+    {
+      "source": "No saved key found in {0}",
+      "translation": "Nessuna chiave salvata in {0}"
+    },
+    {
+      "source": "Store install failed: {0}",
+      "translation": "Installazione dello Store non riuscita: {0}"
+    },
+    {
+      "source": "Latest Store version: {0}",
+      "translation": "Ultima versione dello Store: {0}"
+    },
+    {
+      "source": "Store removal failed: {0}",
+      "translation": "Rimozione dello Store non riuscita: {0}"
+    },
+    {
+      "source": "Found {0} ENET gateways:",
+      "translation": "Trovati {0} gateway ENET:"
+    },
+    {
+      "source": "SVK was not decoded: {0}",
+      "translation": "SVK non decodificato: {0}"
+    },
+    {
+      "source": "MGU IP: {0} | netmask: {1}",
+      "translation": "IP della MGU: {0} | netmask: {1}"
+    },
+    {
+      "source": "Challenge identity: {0}",
+      "translation": "Identità del challenge: {0}"
+    },
+    {
+      "source": "Store check failed: {0}",
+      "translation": "Controllo dello Store non riuscito: {0}"
+    },
+    {
+      "source": "Discovery failed: {0}",
+      "translation": "Ricerca non riuscita: {0}"
+    },
+    {
+      "source": "[{0} finished, exit {1}]",
+      "translation": "[{0} terminato, uscita {1}]"
+    },
+    {
+      "source": "MGU IP override: {0}",
+      "translation": "IP della MGU indicato a mano: {0}"
+    },
+    {
+      "source": "probe retry {0}/{1}...",
+      "translation": "nuovo tentativo {0}/{1}..."
+    },
+    {
+      "source": "SSH OK as root: {0}",
+      "translation": "SSH OK come root: {0}"
+    },
+    {
+      "source": "Root SSH OK on {0}.",
+      "translation": "Root SSH OK su {0}."
+    },
+    {
+      "source": "Skipped {0}: {1}",
+      "translation": "Saltato {0}: {1}"
+    },
+    {
+      "source": "FAILED: {0}",
+      "translation": "NON RIUSCITO: {0}"
+    },
+    {
+      "source": "ERROR: {0}",
+      "translation": "ERRORE: {0}"
     }
   ],
   "log_values": {

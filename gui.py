@@ -56,10 +56,11 @@ import ssh_enable
 from i18n import Translator
 from mgu7 import discovery
 from mgu7 import store as store_mod
+from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.2.2"
+APP_VERSION = "1.3.0"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
@@ -165,6 +166,8 @@ class App:
         self._history = []
         self._is_busy = False
         self.state = None
+        self._store_loading = False
+        self._store_error = None
 
         root.title(WINDOW_TITLE)
         root.configure(bg=BG)
@@ -189,7 +192,9 @@ class App:
             # All'avvio, senza aspettare la vettura: le ultime versioni di
             # mgu-store da GitHub riempiono subito la tabella.
             self.root.after(400, lambda: self.do_store_latest(quiet=True))
-        self.root.after(100, self._drain)
+        self._drain_id = self.root.after(100, self._drain)
+        # Alla chiusura il ciclo del registro si ferma, senza "invalid command name".
+        self.root.bind("<Destroy>", self._on_destroy, add="+")
 
     # --- stile ------------------------------------------------------------
 
@@ -406,10 +411,21 @@ class App:
                         variable=self.disable_debug, style="Dark.TCheckbutton").pack(side="left")
         ttk.Checkbutton(opts, text="Chiave unica per l'auto (avanzato)", variable=self.unique_key,
                         style="Dark.TCheckbutton").pack(side="left", padx=(16, 0))
-        tk.Label(card.body, text="Prima del flash: “Backup codifica” (o BimmerCode / E-Sys). Il flash cancella "
-                 "la codifica e gli abbinamenti Digital Key; dopo va ripristinata con BimmerCode o E-Sys.",
-                 bg=SURFACE, fg="#f3c98a", font=(FONT, 8), anchor="w", justify="left",
-                 wraplength=580).pack(fill="x", pady=(4, 0))
+        coding = tk.Frame(card.body, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
+        coding.pack(fill="x", pady=(6, 0))
+        tk.Label(coding, text="Codifica", bg=SURFACE, fg=TEXT, font=(FONT, 9, "bold"),
+                 padx=10).pack(side="left")
+        self.coding_info = tk.Label(coding, text="", bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w")
+        self.coding_info.pack(side="left", fill="x", expand=True)
+        self.btn_restore = ttk.Button(coding, text="Ripristina (sperimentale)", style="Small.TButton",
+                                      command=self.do_restore)
+        self.btn_restore.pack(side="right", padx=(4, 6), pady=4)
+        self.btn_backup = ttk.Button(coding, text="Backup codifica", style="Small.TButton", command=self.do_backup)
+        self.btn_backup.pack(side="right", pady=4)
+        tk.Label(card.body, text="Il flash cancella la codifica e gli abbinamenti Digital Key: prima il backup "
+                 "(il programma lo propone da solo), dopo il ripristino. Il ripristino è sperimentale: tieni "
+                 "a portata BimmerCode o E-Sys.", bg=SURFACE, fg="#f3c98a", font=(FONT, 8), anchor="w",
+                 justify="left", wraplength=580).pack(fill="x", pady=(4, 0))
 
         self.btn_flash = ttk.Button(card.actions, text="Flash + Apri SSH", style="Primary.TButton",
                                     command=self.do_flash)
@@ -420,9 +436,6 @@ class App:
         self.btn_fix = ttk.Button(card.actions, text="Correggi chiave", style="Secondary.TButton",
                                   command=self.do_fix_key)
         self.btn_fix.pack(side="left", padx=(6, 0))
-        self.btn_backup = ttk.Button(card.actions, text="Backup codifica", style="Secondary.TButton",
-                                     command=self.do_backup)
-        self.btn_backup.pack(side="left", padx=(6, 0))
         self.btn_disable = ttk.Button(card.actions, text="Disattiva SSH", style="Danger.TButton",
                                       command=self.do_disable)
         self.btn_disable.pack(side="left", padx=(6, 0))
@@ -563,7 +576,15 @@ class App:
                 self.calls.get_nowait()()
         except queue.Empty:
             pass
-        self.root.after(100, self._drain)
+        self._drain_id = self.root.after(100, self._drain)
+
+    def _on_destroy(self, event):
+        if event.widget is self.root and self._drain_id is not None:
+            try:
+                self.root.after_cancel(self._drain_id)
+            except tk.TclError:
+                pass
+            self._drain_id = None
 
     def _later(self, callback):
         """From a worker thread: run *callback* on the Tk thread (Tk is not
@@ -574,7 +595,7 @@ class App:
 
     def _action_buttons(self):
         return [self.btn_check, self.detect_btn, self.btn_flash, self.btn_enable, self.btn_fix,
-                self.btn_backup, self.btn_disable, self.btn_store, self.btn_versions, self.btn_restart,
+                self.btn_backup, self.btn_restore, self.btn_disable, self.btn_store, self.btn_versions, self.btn_restart,
                 self.btn_remove, self.btn_github, self.btn_update]
 
     def _busy(self, on, text=None):
@@ -696,6 +717,14 @@ class App:
         else:
             self._set_chip(self.card_ssh, "NON ATTIVO", WARN)
 
+        backups = self._backups()
+        if backups:
+            b = backups[0]
+            self.coding_info.configure(text="backup del %s UTC, %d blocchi%s" % (
+                b["taken"], b["blocks"], "" if b["verified"] else " (NON verificato)"),
+                fg=TEXT if b["verified"] else WARN)
+        else:
+            self.coding_info.configure(text="nessun backup per questo VIN", fg=MUTED)
         self.tree.delete(*self.tree.get_children())
         rows = (store or {}).get("rows") or (catalog or {}).get("rows") or []
         for row in rows:
@@ -726,7 +755,12 @@ class App:
             line, colour = "Store %s installato: è tutto aggiornato." % (summary.get("store") or "?") + suffix, OK
         else:
             self._set_chip(self.card_store, "DA VERIFICARE", MUTED)
-            if latest:
+            if self._store_loading:
+                line, colour = "Lettura delle ultime versioni di mgu-store da GitHub…", MUTED
+            elif self._store_error:
+                line, colour = ("Versioni da GitHub non lette (%s). Premi “Controlla aggiornamenti GitHub” per "
+                                "riprovare." % self._store_error), WARN
+            elif latest:
                 line, colour = ("Ultimo Store pubblicato: %s. Collega la vettura per confrontarlo con la MGU."
                                 % latest + suffix), TEXT
             else:
@@ -780,16 +814,48 @@ class App:
                 "Hai fatto il backup della codifica?\n\nContinuare?" % self.vin.get().strip(),
                 icon="warning"):
             return
+        if not self._has_verified_backup():
+            answer = messagebox.askyesnocancel(
+                "Backup della codifica",
+                "Per il VIN %s non c'è ancora un backup verificato della codifica.\n\n"
+                "Sì = fai prima il backup (consigliato), poi il flash.\n"
+                "No = flash senza backup.\nAnnulla = non fare nulla." % self.vin.get().strip(), icon="warning")
+            if answer is None:
+                return
+            if answer:
+                self._run(["preflight"] + self._common_args(), "preflight",
+                          on_done=lambda rc: self._flash_after_backup(rc),
+                          text="Backup della codifica in corso (sola lettura)…")
+                return
+        self._start_flash()
+
+    def _flash_after_backup(self, rc):
+        if rc == 0 and self._has_verified_backup():
+            self._start_flash()
+        else:
+            messagebox.showerror("Backup codifica", "Il backup non è riuscito o non è verificato: il flash NON è "
+                                 "partito. Il motivo è nel registro.")
+
+    def _start_flash(self):
         self._run(["flash"] + self._persist_args() + self._common_args(), "flash", on_done=self._flash_done,
                   text="Flash in corso: non scollegare il PC e non avviare altre operazioni…")
 
     def _flash_done(self, rc):
         """Dopo un flash riuscito la codifica è cancellata: dire cosa viene prima dello Store."""
-        if rc == 0:
+        if rc == 0 and self._has_verified_backup():
+            if messagebox.askyesno(
+                    "Accesso SSH completato",
+                    "Root SSH attivo. Il flash ha cancellato la codifica della head unit.\n\n"
+                    "Ripristinarla adesso dal backup (sperimentale)?\n\n"
+                    "No = la ripristini tu con BimmerCode o E-Sys."):
+                self._run(["coding-restore"] + self._common_args(), "coding-restore", on_done=self._restore_done,
+                          text="Ripristino della codifica in corso: non scollegare il cavo e non spegnere l'auto…")
+                return
+        elif rc == 0:
             messagebox.showinfo(
                 "Accesso SSH completato",
                 "Root SSH attivo.\n\nIl flash ha cancellato la codifica della head unit: ripristinala adesso con "
-                "BimmerCode o E-Sys dal tuo backup e riavvia la head unit.\n\n"
+                "BimmerCode o E-Sys e riavvia la head unit.\n\n"
                 "Quando la MGU è di nuovo accesa, premi “Installa / Aggiorna”.")
         self.do_check()
 
@@ -808,6 +874,50 @@ class App:
             return
         self._run(["fix-key"] + self._persist_args() + self._common_args(), "fix-key",
                   on_done=lambda rc: self.do_check())
+
+    def _backups(self):
+        vin = self.vin.get().strip()
+        if not vin:
+            return []
+        return coding_mod.find_backups(os.path.join(HERE, "data", "preflight"), vin)
+
+    def _has_verified_backup(self):
+        return any(b["verified"] for b in self._backups())
+
+    def do_restore(self):
+        if not self._require_vin():
+            return
+        if not self._has_verified_backup():
+            messagebox.showerror("Ripristino codifica",
+                                 "Non c'è un backup verificato della codifica per il VIN %s.\n\n"
+                                 "Il backup va fatto PRIMA del flash con “Backup codifica”." % self.vin.get().strip())
+            return
+        if not messagebox.askyesno(
+                "Ripristino codifica (sperimentale)",
+                "Riscrive sulla MGU la codifica dell'ultimo backup di questo VIN, blocco per blocco, rileggendo "
+                "ogni blocco. Si ferma al primo rifiuto della MGU e alla fine la riavvia.\n\n"
+                "È SPERIMENTALE: tieni a portata BimmerCode o E-Sys. Nel caso peggiore la MGU resta senza "
+                "codifica, come dopo il flash.\n\nContinuare?", icon="warning"):
+            return
+        self._run(["coding-restore"] + self._common_args(), "coding-restore", on_done=self._restore_done,
+                  text="Ripristino della codifica in corso: non scollegare il cavo e non spegnere l'auto…")
+
+    def _restore_done(self, rc):
+        if rc == 0:
+            messagebox.showinfo("Ripristino codifica",
+                                "Codifica ripristinata: la MGU riporta di nuovo la sua CAFD.\n\n"
+                                "Quando la MGU è riaccesa controlla lingua, retrocamera e menu, poi premi "
+                                "“Installa / Aggiorna”.")
+        elif rc == ssh_enable.EXIT_CODING_PARTIAL:
+            messagebox.showwarning("Ripristino codifica",
+                                   "I blocchi sono stati scritti, ma la MGU non riporta ancora la sua CAFD.\n\n"
+                                   "Completa con E-Sys (o BimmerCode) e conserva il registro in data\\logs: "
+                                   "serve a migliorare il ripristino.")
+        else:
+            messagebox.showerror("Ripristino codifica",
+                                 "Il ripristino si è fermato: il motivo è nel registro.\n\n"
+                                 "Ripristina con BimmerCode o E-Sys e conserva il registro in data\\logs.")
+        self.do_check()
 
     def do_backup(self):
         self._run(["preflight"] + self._common_args(), "preflight", on_done=self._backup_done,
@@ -928,7 +1038,10 @@ class App:
         (all'avvio): solo tabella e registro, nessuna finestra."""
         if self._is_busy:
             return
+        self._store_loading = True
+        self._store_error = None
         self._busy(True, "Lettura delle ultime versioni di mgu-store da GitHub…")
+        self._refresh()
         self._append("\n$ GitHub %s: catalog\n" % STORE_REPO)
 
         def log(message):
@@ -947,6 +1060,8 @@ class App:
         self.worker.start()
 
     def _store_latest_done(self, rows, online, commit, error, quiet=False):
+        self._store_loading = False
+        self._store_error = error if rows is None else None
         self._busy(False)
         if rows is None:
             if quiet:

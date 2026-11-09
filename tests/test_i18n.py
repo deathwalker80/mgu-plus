@@ -144,6 +144,7 @@ class GuiTests(unittest.TestCase):
         app = self.app
         app.vin.set('TESTVIN1234567890')
         with patch.object(app, '_run') as run, patch.object(gui.messagebox, 'askyesno', return_value=True), \
+                patch.object(gui.messagebox, 'askyesnocancel', return_value=False), \
                 patch.object(gui.messagebox, 'showerror') as error:
             app.do_check()
             self.assertEqual(run.call_args.args[0], ['check', '--yes', '--vin', 'TESTVIN1234567890', '--gateway',
@@ -198,6 +199,68 @@ class GuiTests(unittest.TestCase):
         self.app.clear_log()
         self.assertEqual(self.app.out.get('1.0', 'end').strip(), '')
         self.assertEqual(self.app._history, [])
+
+
+class CodingRestoreGuiTests(unittest.TestCase):
+    def setUp(self):
+        self.root = gui.tk.Tk()
+        self.root.withdraw()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.here = patch.object(gui, 'HERE', self.tmp.name)
+        self.here.start()
+        self.app = gui.App(self.root, auto_check=False)
+        self.app.vin.set('WBA7U2C08RCN12345')
+        self.app.variant_label.set(gui.VARIANT_CHOICES[0][1])
+        self.app._on_variant(self.app.variant_label.get())
+
+    def tearDown(self):
+        self.here.stop()
+        self.root.destroy()
+        self.tmp.cleanup()
+
+    def add_backup(self, verified=True):
+        folder = Path(self.tmp.name, 'data', 'preflight', '20261109-WBA7U2C08RCN12345')
+        folder.mkdir(parents=True)
+        (folder / 'backup.json').write_text(json.dumps({'vin': 'WBA7U2C08RCN12345', 'taken': '2026-11-09 10:00:00',
+                                                         'coding': {'3000': '01'}, 'verified': verified}))
+
+    def test_flash_offers_the_backup_first(self):
+        with patch.object(self.app, '_run') as run, patch.object(gui.messagebox, 'askyesno', return_value=True), \
+                patch.object(gui.messagebox, 'askyesnocancel', return_value=True):
+            self.app.do_flash()
+            self.assertEqual(run.call_args.args[0][0], 'preflight')
+            with patch.object(gui.messagebox, 'showerror') as error:
+                run.call_args.kwargs['on_done'](1)  # backup failed: no flash
+            error.assert_called_once()
+            self.assertEqual(run.call_count, 1)
+        with patch.object(self.app, '_run') as run, patch.object(gui.messagebox, 'askyesno', return_value=True), \
+                patch.object(gui.messagebox, 'askyesnocancel', return_value=None):
+            self.app.do_flash()  # Annulla
+            run.assert_not_called()
+
+    def test_with_a_backup_flash_starts_and_restore_is_offered(self):
+        self.add_backup()
+        self.app._refresh()
+        self.assertIn('backup del 2026-11-09 10:00:00 UTC, 1 blocchi', self.app.coding_info.cget('text'))
+        with patch.object(self.app, '_run') as run, patch.object(gui.messagebox, 'askyesno', return_value=True):
+            self.app.do_flash()
+            self.assertEqual(run.call_args.args[0][0], 'flash')
+            self.app._flash_done(0)
+            self.assertEqual(run.call_args.args[0][0], 'coding-restore')
+            self.app.do_restore()
+            self.assertEqual(run.call_args.args[0][0], 'coding-restore')
+        for rc, box in ((0, 'showinfo'), (gui.ssh_enable.EXIT_CODING_PARTIAL, 'showwarning'), (1, 'showerror')):
+            with patch.object(self.app, '_run') as run, patch.object(gui.messagebox, box) as shown:
+                self.app._restore_done(rc)
+                shown.assert_called_once()
+                self.assertEqual(run.call_args.args[0][0], 'check')
+
+    def test_restore_needs_a_verified_backup(self):
+        self.add_backup(verified=False)
+        with patch.object(self.app, '_run') as run, patch.object(gui.messagebox, 'showerror') as error:
+            self.app.do_restore()
+            error.assert_called_once()
+            run.assert_not_called()
 
 
 class StoreLatestTests(unittest.TestCase):
@@ -301,10 +364,10 @@ class ProgramUpdateTests(unittest.TestCase):
 
     def test_outcomes(self):
         self.assertEqual(gui.UPDATE_API, 'https://api.github.com/repos/deathwalker80/mgu-plus/releases/latest')
+        with self.fake({'tag_name': 'v1.4.0', 'html_url': 'https://example/r'}):
+            self.assertEqual(gui.check_program_update(current='1.3.0'), ('newer', '1.4.0', 'https://example/r', None))
         with self.fake({'tag_name': 'v1.3.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.2'), ('newer', '1.3.0', 'https://example/r', None))
-        with self.fake({'tag_name': 'v1.2.2', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.2')[0], 'current')
+            self.assertEqual(gui.check_program_update(current='1.3.0')[0], 'current')
         with self.fake(error=gui.urllib.error.HTTPError('u', 404, 'Not Found', {}, None)):
             self.assertEqual(gui.check_program_update()[0], 'none')
         with self.fake(error=gui.urllib.error.URLError('offline')):

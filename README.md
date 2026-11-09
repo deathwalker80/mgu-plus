@@ -1,10 +1,11 @@
-> **MGU Plus 1.2.2** - this copy is MGU Plus: an Italian, single-window GUI
+> **MGU Plus 1.3.0** - this copy is MGU Plus: an Italian, single-window GUI
 > (`gui.py`) over this tool that also installs, updates and removes
 > [mgu-store](https://github.com/robertnisipeanu/mgu-store) over the root SSH
 > access, shows the installed against the newest published versions, and works
 > over the car's Wi-Fi hotspot for the SSH-only steps; "Controlla aggiornamenti
 > GitHub" reads mgu-store's newest published versions without the car. New actions:
-> `ssh_enable.py check | store | store-restart | store-remove`, options
+> `ssh_enable.py check | store | store-restart | store-remove | coding-restore` (experimental,
+> `mgu7/coding.py`), options
 > `--gateway hotspot` and `--key <file>` (`mgu7/store.py`). mgu-store is not
 > bundled: its own installer is downloaded from its release and checked
 > against its SHA256SUMS on every run. Build: `build_exe.bat`. Guide: `LEGGIMI.txt`.

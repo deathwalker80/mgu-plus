@@ -14,9 +14,11 @@ if HERE not in sys.path:
 from mgu7 import assets as assets_mod
 from mgu7 import diag, discovery, enroll, flash, hsfz, identity as identity_mod, preflight, sshcli
 from mgu7 import store as store_mod
+from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 EXIT_OK = 0
 EXIT_ERROR = 1
+EXIT_CODING_PARTIAL = 12
 # Actions that need only SSH, so they also work over the car's Wi-Fi hotspot.
 HOTSPOT_ACTIONS = ('check', 'store', 'store-restart', 'store-remove')
 
@@ -435,6 +437,41 @@ class Tool:
             if answer not in ('y', 'yes'):
                 raise SystemExit('Aborted.')
         return EXIT_OK if store_mod.restart(self.mgu_ip, identity, log) == 0 else EXIT_ERROR
+
+    def coding_restore(self):
+        """SPERIMENTALE: riscrive sulla MGU la codifica di "Backup codifica"
+        (mgu7/coding.py). Exit 0 fatto, 12 blocchi scritti ma CAFD ancora da
+        impostare (E-Sys), 1 fermato."""
+        self.connect()
+        vin = self.vin or preflight.read_vin(self.client)
+        folder = getattr(self.args, 'backup', None)
+        if not folder:
+            backups = [b for b in coding_mod.find_backups(os.path.join(HERE, 'data', 'preflight'), vin)
+                       if b['verified']]
+            if not backups:
+                log('FAILED: no verified coding backup for VIN %s in data/preflight; run "Backup codifica" first.' % vin)
+                return EXIT_ERROR
+            folder = backups[0]['folder']
+        try:
+            backup = coding_mod.load_backup(folder)
+            result = coding_mod.restore(self.client, self.svk, vin, backup, self.assets.raw(7), log, diag.read_svk,
+                                        dry_run=bool(getattr(self.args, 'dry_run', False)))
+        except coding_mod.CodingError as e:
+            log('FAILED: coding restore stopped: %s' % e)
+            return EXIT_ERROR
+        except (OSError, ValueError) as e:
+            log('FAILED: coding backup not readable: %s' % e)
+            return EXIT_ERROR
+        if result['dry_run']:
+            log('DONE: dry run, nothing sent to the head unit.')
+            return EXIT_OK
+        if result['cafd_set']:
+            log('DONE: coding restored (%d blocks) and the head unit reports CAFD %s.' % (result['written'],
+                                                                                         result['cafd_after']))
+            return EXIT_OK
+        log('WARNING: %d blocks written, but the head unit still reports CAFD %s: finish with E-Sys '
+            '(CAFD injection) and keep the session log.' % (result['written'], result['cafd_after']))
+        return EXIT_CODING_PARTIAL
 
     def store_remove(self):
         """Remove the Store setup from the unit (mgu-install uninstall)."""
@@ -1025,8 +1062,10 @@ class Tool:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MGU ID7/ID8 SSH enable, status and close tool (flash-debug-mode + SSH-identity enroll).')
-    parser.add_argument('action', choices=('enable', 'flash', 'fix-key', 'close', 'disable', 'status', 'persist', 'preflight', 'store', 'store-restart', 'store-remove', 'check'), help='enable = enroll-only (re-open SSH on an already-flashed unit, no flashing); flash = flash the debug image + enroll; fix-key = re-flash carrying our root key in the unsigned region (repair for units that enroll + open port 22 but refuse login because their stock authorized_keys.root holds a different key - issue #2); persist = make SSH start on every boot then turn debug mode off (clears the B7F8E5 DTC); disable = revert persistence + stop debug/SSH; close = stop debug/SSH; status = read state; preflight = back up the MGU coding read-only over ENET before flashing (no extra adapter); store = install the mgu-store app store over the root SSH access (exit 10: installed, a head-unit restart finishes it); store-restart = restart the head unit to finish the Store setup; store-remove = remove everything the Store setup put on the head unit; check = read the car, root SSH and the installed and newest Store versions into data/mgu-store/state.json, changing nothing')
+    parser.add_argument('action', choices=('enable', 'flash', 'fix-key', 'close', 'disable', 'status', 'persist', 'preflight', 'store', 'store-restart', 'store-remove', 'check', 'coding-restore'), help='enable = enroll-only (re-open SSH on an already-flashed unit, no flashing); flash = flash the debug image + enroll; fix-key = re-flash carrying our root key in the unsigned region (repair for units that enroll + open port 22 but refuse login because their stock authorized_keys.root holds a different key - issue #2); persist = make SSH start on every boot then turn debug mode off (clears the B7F8E5 DTC); disable = revert persistence + stop debug/SSH; close = stop debug/SSH; status = read state; preflight = back up the MGU coding read-only over ENET before flashing (no extra adapter); store = install the mgu-store app store over the root SSH access (exit 10: installed, a head-unit restart finishes it); store-restart = restart the head unit to finish the Store setup; store-remove = remove everything the Store setup put on the head unit; check = read the car, root SSH and the installed and newest Store versions into data/mgu-store/state.json, changing nothing; coding-restore = EXPERIMENTAL: write the coding backup of this VIN back to the head unit (exit 12: blocks written, CAFD still to set with E-Sys)')
     parser.add_argument('--gateway', default='auto', help="ENET gateway/ZGW address, 'auto' for UDP 6811 broadcast discovery, or 'hotspot' to reach the head unit over the car's Wi-Fi hotspot (SSH steps only) (default: %(default)s)")
+    parser.add_argument('--backup', metavar='FOLDER', help='coding-restore: the backup folder to write (default: the newest verified one of this VIN in data/preflight)')
+    parser.add_argument('--dry-run', action='store_true', help='coding-restore: check the backup against the car and list the blocks, sending nothing')
     parser.add_argument('--key', metavar='PATH', help="root SSH private key to use instead of the saved one (data/enrollments/<VIN>/)")
     parser.add_argument('--vin', help='17-char VIN (required for enable; written to the MGU with 2E F1 90)')
     parser.add_argument('--arch', default=ID7, choices=(ID7, ID8_BDC3, ID8_BCP), help='head-unit variant (default: %(default)s)')
@@ -1071,6 +1110,8 @@ def main(argv=None):
             return tool.check()
         elif args.action == 'store-remove':
             return tool.store_remove()
+        elif args.action == 'coding-restore':
+            return tool.coding_restore()
         else:
             return tool.enable()
     except KeyboardInterrupt:

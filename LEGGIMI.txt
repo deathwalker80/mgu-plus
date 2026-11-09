@@ -1,4 +1,4 @@
-﻿MGU Plus  -  versione 1.2.2
+﻿MGU Plus  -  versione 1.3.0
 ===========================
 
 Root SSH e App Store (mgu-store) sulle head unit BMW MGU iDrive 7, da un PC Windows.
@@ -20,7 +20,7 @@ COSA SERVE
 LA SCHERMATA
 ------------
 1 Connessione vettura   Gateway, VIN, IP, tipo, seriale e hardware della MGU.
-2 Accesso SSH MGU       Flash, apertura SSH, backup della codifica.
+2 Accesso SSH MGU       Flash, apertura SSH, backup e ripristino della codifica.
 3 Applicazioni MGU      Versioni installate e ultime pubblicate, installazione,
                         aggiornamento, rimozione dello Store, riavvio della MGU.
 In basso il registro di tutte le operazioni (completo, in inglese, in data\logs).
@@ -33,12 +33,16 @@ PRIMA VOLTA SU UN'AUTO (non ancora rootata)
    velocemente Start/Stop, finché il quadro mostra "Modalità diagnosi attiva".
 3. Premi "Connetti vettura": compaiono VIN, IP, seriale e hardware della MGU.
 4. Scegli il "Tipo MGU" (ID7 = software 030.xxx). Se non sei sicuro, FERMATI.
-5. Premi "Backup codifica" (sola lettura): salva la codifica in data\preflight.
-   Copiala anche fuori dal PC. Un backup con BimmerCode in più non guasta.
-6. Premi "Flash + Apri SSH" e conferma. Non scollegare nulla fino alla fine.
-   Il flash cancella la codifica e gli abbinamenti Digital Key.
-7. Ripristina la codifica con BimmerCode o E-Sys e riavvia la head unit.
-   (Il programma NON riscrive la codifica da solo: vedi sotto.)
+5. Premi "Flash + Apri SSH". Se per quel VIN non c'è un backup della codifica,
+   il programma lo fa prima da solo (sola lettura, in data\preflight).
+   Copialo anche fuori dal PC. Un backup con BimmerCode in più non guasta.
+   Non scollegare nulla fino alla fine: il flash cancella la codifica e gli
+   abbinamenti Digital Key.
+6. Alla fine il programma propone di ripristinare la codifica dal backup
+   (SPERIMENTALE, anche con "Ripristina" nel riquadro 2). Se si ferma o la MGU
+   non riporta la sua CAFD, ripristina con BimmerCode o E-Sys e conserva il
+   registro in data\logs.
+7. Riavviata la MGU, controlla lingua, retrocamera e menu.
 8. Premi "Installa / Aggiorna" e, alla domanda, rispondi Sì al riavvio della MGU.
    L'icona dello Store compare tra le app dell'auto.
 
