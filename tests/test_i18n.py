@@ -82,7 +82,7 @@ class GuiTests(unittest.TestCase):
     def setUp(self):
         self.root = gui.tk.Tk()
         self.root.withdraw()
-        self.app = gui.App(self.root)
+        self.app = gui.App(self.root, auto_check=False)
 
     def tearDown(self):
         self.root.destroy()
@@ -207,7 +207,7 @@ class StoreLatestTests(unittest.TestCase):
     def setUp(self):
         self.root = gui.tk.Tk()
         self.root.withdraw()
-        self.app = gui.App(self.root)
+        self.app = gui.App(self.root, auto_check=False)
         self.rows = store.catalog_rows({'components': [
             {'id': 'mgu-deploy', 'kind': 'tool', 'title': 'Deploy tool', 'version': '0.8.9'},
             {'id': 'robertn_store', 'kind': 'app', 'title': 'Store', 'version': '0.9.40'}]})
@@ -256,6 +256,28 @@ class StoreLatestTests(unittest.TestCase):
         self.assertNotIn('disabled', self.app.btn_github.state())
 
 
+class StartupTests(unittest.TestCase):
+    def test_latest_store_versions_are_read_at_startup_quietly(self):
+        root = gui.tk.Tk()
+        root.withdraw()
+        try:
+            catalog = {'commit': 'abc', 'components': [{'id': 'robertn_store', 'title': 'Store', 'version': '0.9.40'}]}
+            with patch.object(store, 'fetch_catalog', return_value=(catalog, True)), \
+                    patch.object(gui.messagebox, 'showinfo') as info:
+                app = gui.App(root)
+                for _ in range(80):
+                    root.update()
+                    if app.tree.get_children() and not app._is_busy:
+                        break
+                    gui.time.sleep(0.05)
+                info.assert_not_called()
+            rows = [app.tree.item(i, 'values') for i in app.tree.get_children()]
+            self.assertEqual(rows, [('Store', '—', '0.9.40', 'Da confrontare con la MGU')])
+            self.assertIn('Ultimo Store pubblicato: 0.9.40', app.store_line.cget('text'))
+        finally:
+            root.destroy()
+
+
 class ProgramUpdateTests(unittest.TestCase):
     def fake(self, payload=None, error=None):
         class Response:
@@ -281,9 +303,9 @@ class ProgramUpdateTests(unittest.TestCase):
     def test_outcomes(self):
         self.assertEqual(gui.UPDATE_API, 'https://api.github.com/repos/deathwalker80/mgu-plus/releases/latest')
         with self.fake({'tag_name': 'v1.3.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.0'), ('newer', '1.3.0', 'https://example/r', None))
-        with self.fake({'tag_name': 'v1.2.0', 'html_url': 'https://example/r'}):
-            self.assertEqual(gui.check_program_update(current='1.2.0')[0], 'current')
+            self.assertEqual(gui.check_program_update(current='1.2.1'), ('newer', '1.3.0', 'https://example/r', None))
+        with self.fake({'tag_name': 'v1.2.1', 'html_url': 'https://example/r'}):
+            self.assertEqual(gui.check_program_update(current='1.2.1')[0], 'current')
         with self.fake(error=gui.urllib.error.HTTPError('u', 404, 'Not Found', {}, None)):
             self.assertEqual(gui.check_program_update()[0], 'none')
         with self.fake(error=gui.urllib.error.URLError('offline')):

@@ -1,9 +1,10 @@
-﻿MGU Plus  -  versione 1.2.0
+﻿MGU Plus  -  versione 1.2.1
 ===========================
 
 Root SSH e App Store (mgu-store) sulle head unit BMW MGU iDrive 7, da un PC Windows.
 NON funziona sulle NBT / NBT EVO (iDrive 6): il programma le riconosce e si ferma.
-iDrive 8: lo Store è provato dai suoi autori solo in emulatore.
+iDrive 8 (tipo MGU "ID8 ... sperimentale"): il root SSH è supportato, ma lo Store è
+provato dai suoi autori solo in emulatore. Usalo solo se sai cosa fai.
 
 
 COSA SERVE

@@ -1,10 +1,10 @@
 @echo off
 REM Build MGU Plus into a Windows .exe (one-folder app) and pack it as
-REM dist\MGU-Plus-windows-1.2.0.zip. Run it from the project folder, with Python on PATH.
+REM dist\MGU-Plus-windows-<VERSION>.zip. Run it from the project folder, with Python on PATH.
 REM PyInstaller works in a temporary folder: at the end only dist\ is left here.
 setlocal
 cd /d "%~dp0"
-set "VERSION=1.2.0"
+set "VERSION=1.2.1"
 set "WORK=%TEMP%\mgu-plus-build"
 
 python -c "import sys" >nul 2>nul || (echo Python not found: install it from python.org, ticking "Add python.exe to PATH", then turn off the python.exe / python3.exe app execution aliases. & goto :err)

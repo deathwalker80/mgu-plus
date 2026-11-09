@@ -59,7 +59,7 @@ from mgu7 import store as store_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
@@ -77,8 +77,8 @@ ARCHES = (ID7, ID8_BDC3, ID8_BCP)
 VARIANT_PROMPT = "— scegli —"
 VARIANT_CHOICES = (
     (ID7, "ID7  (software 030.xxx)"),
-    (ID8_BDC3, "ID8 BDC3  (software 036.xxx)"),
-    (ID8_BCP, "ID8 BCP  (software 036.xxx)"),
+    (ID8_BDC3, "ID8 BDC3  (036.xxx, sperimentale)"),
+    (ID8_BCP, "ID8 BCP  (036.xxx, sperimentale)"),
 )
 _VARIANT_BY_LABEL = {label: code for code, label in VARIANT_CHOICES}
 
@@ -154,7 +154,7 @@ def _dark_title_bar(root):
 
 
 class App:
-    def __init__(self, root):
+    def __init__(self, root, auto_check=True):
         self.root = root
         self.q = queue.Queue()
         # Callbacks the worker threads hand back to the Tk thread (_drain runs them).
@@ -186,6 +186,10 @@ class App:
         self._build()
         self._refresh()
         _dark_title_bar(root)
+        if auto_check:
+            # All'avvio, senza aspettare la vettura: le ultime versioni di
+            # mgu-store da GitHub riempiono subito la tabella.
+            self.root.after(400, lambda: self.do_store_latest(quiet=True))
         self.root.after(100, self._drain)
 
     # --- stile ------------------------------------------------------------
@@ -320,7 +324,7 @@ class App:
         tk.Label(top, text="MGU PLUS", bg=SURFACE, fg=TEXT, font=(FONT, 17, "bold")).pack(side="left")
         tk.Label(top, text="v" + APP_VERSION, bg=SURFACE, fg=MUTED,
                  font=(FONT, 9)).pack(side="left", padx=(8, 0), pady=(7, 0))
-        tk.Label(titles, text="Root SSH e App Store per BMW iDrive 7", bg=SURFACE, fg=MUTED,
+        tk.Label(titles, text="Root SSH e App Store per BMW iDrive 7  ·  iDrive 8 sperimentale", bg=SURFACE, fg=MUTED,
                  font=(FONT, 9)).pack(anchor="w")
 
         self.btn_update = ttk.Button(header, text="Aggiornamenti MGU Plus", style="Small.TButton",
@@ -399,7 +403,7 @@ class App:
         card = self._card(parent, 2, "Accesso SSH MGU")
         keyrow = tk.Frame(card.body, bg=SURFACE)
         keyrow.pack(fill="x")
-        tk.Label(keyrow, text="Chiave privata SSH root", bg=SURFACE, fg=MUTED, font=(FONT, 9),
+        tk.Label(keyrow, text="Chiave SSH root (facoltativa)", bg=SURFACE, fg=MUTED, font=(FONT, 9),
                  anchor="w").pack(side="left", padx=(0, 10))
         self.key_entry = ttk.Entry(keyrow, textvariable=self.key_path, font=(MONO, 9))
         self.key_entry.pack(side="left", fill="x", expand=True)
@@ -408,8 +412,10 @@ class App:
         self.btn_key_default.pack(side="right", padx=(6, 0))
         self.btn_key_browse = ttk.Button(keyrow, text="Sfoglia…", style="Small.TButton", command=self.browse_key)
         self.btn_key_browse.pack(side="right", padx=(6, 0))
-        tk.Label(card.body, text="Vuota = la chiave salvata per il VIN in data\\enrollments, o quella "
-                 "dell'immagine di debug.", bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w").pack(fill="x")
+        tk.Label(card.body, text="Lasciala vuota: il programma usa da solo la chiave giusta (quella del flash, salvata "
+                 "in data\\enrollments). Serve solo per una chiave creata da un altro PC o con la chiave unica.",
+                 bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w", justify="left",
+                 wraplength=580).pack(fill="x")
 
         opts = tk.Frame(card.body, bg=SURFACE)
         opts.pack(fill="x", pady=(4, 0))
@@ -713,7 +719,7 @@ class App:
         rows = (store or {}).get("rows") or (catalog or {}).get("rows") or []
         for row in rows:
             state = row.get("state")
-            text = ROW_TEXT[state][0] if state in ROW_TEXT else "—"
+            text = ROW_TEXT[state][0] if state in ROW_TEXT else "Da confrontare con la MGU"
             self.tree.insert("", "end", values=(self._title(row), row.get("installed") or "—",
                                                 row.get("latest") or "—", text),
                              tags=(state,) if state in ROW_TEXT else ())
@@ -942,10 +948,11 @@ class App:
         self.worker = threading.Thread(target=task, daemon=True)
         self.worker.start()
 
-    def do_store_latest(self):
+    def do_store_latest(self, quiet=False):
         """Legge da GitHub le ultime versioni pubblicate di mgu-store (release
         "catalog") e le confronta con quelle lette dalla MGU all'ultimo
-        collegamento. Non tocca l'auto: basta internet sul PC."""
+        collegamento. Non tocca l'auto: basta internet sul PC. *quiet*
+        (all'avvio): solo tabella e registro, nessuna finestra."""
         if self._is_busy:
             return
         self._busy(True, "Lettura delle ultime versioni di mgu-store da GitHub…")
@@ -961,14 +968,16 @@ class App:
             except store_mod.StoreError as e:
                 log("Could not read the latest Store versions: %s" % e)
                 result = (None, False, None, str(e))
-            self._later(lambda: self._store_latest_done(*result))
+            self._later(lambda: self._store_latest_done(*result, quiet=quiet))
 
         self.worker = threading.Thread(target=task, daemon=True)
         self.worker.start()
 
-    def _store_latest_done(self, rows, online, commit, error):
+    def _store_latest_done(self, rows, online, commit, error, quiet=False):
         self._busy(False)
         if rows is None:
+            if quiet:
+                return
             messagebox.showwarning("Aggiornamenti mgu-store",
                                    "Impossibile leggere le versioni da GitHub:\n%s" % error)
             return
@@ -984,6 +993,8 @@ class App:
         self._refresh()
         latest = next((r["latest"] for r in rows if r["id"] == "robertn_store"), "?")
         self._append("[%s] Latest Store version: %s\n" % (time.strftime("%H:%M:%S"), latest))
+        if quiet:
+            return
         offline = "" if online else "\n\n(Senza internet: sono le versioni dell'ultimo controllo.)"
         summary = (state.get("store") or {}).get("summary")
         if summary and summary.get("installed"):
