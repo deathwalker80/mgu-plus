@@ -43,7 +43,8 @@ REQ_SET_CODING_MODE = bytes.fromhex('31 01 10 0D')
 REQ_SET_APPLICATION_MODE = bytes.fromhex('31 01 10 0F')
 REQ_RESET = bytes.fromhex('11 01')
 REQ_TESTER_PRESENT = bytes.fromhex('3E 80')
-SEED_LEVELS = (0x11, 0x01)           # quella del flash, poi la standard
+SEED_LEVELS = (0x01, 0x11)           # 0x01 provata sulla MGU ID7 (chiave M7F1 accettata), poi quella del flash
+WRITE_TIMEOUT_MS = 30000             # una scrittura di codifica può richiedere più di una lettura
 TESTER_PRESENT_EVERY = 2.0           # secondi
 
 # Risposte negative UDS (ISO 14229) che possono comparire qui, per il registro.
@@ -134,21 +135,33 @@ def _svk_records(svk_strings, name):
     return sorted(s for s in svk_strings if s.split(' ', 1)[0] == name)
 
 
-def check_backup(backup, vin, svk_now):
-    """Controlli prima di scrivere: stesso VIN, backup verificato, stesso hardware
-    e bootloader. Restituisce gli avvisi (non bloccanti); solleva CodingError per
-    quelli bloccanti."""
+def check_backup(backup, vin, svk_now, serial_now=None):
+    """Controlli prima di scrivere. Bloccanti (CodingError): backup non verificato,
+    VIN diverso, hardware (HWEL) o numero di serie diversi = un'altra unità,
+    bootloader (BTLD) diverso = MGU aggiornata a un'altra versione dopo il
+    backup, su cui una codifica vecchia non va riscritta. Restituisce gli avvisi
+    non bloccanti (i moduli software cambiati: il flash di debug ne riscrive uno)."""
     if not backup.get('verified'):
         raise CodingError('il backup non è verificato (le due letture non coincidevano): non lo riscrivo')
     if not vin or (backup.get('vin') or '').upper() != vin.upper():
         raise CodingError('il backup è del VIN %s, l\'auto collegata è %s' % (backup.get('vin'), vin or '?'))
+    before = backup.get('svk') or []
     now = [str(r) for r in svk_now.records]
+    if _svk_records(before, 'HWEL') != _svk_records(now, 'HWEL'):
+        raise CodingError('hardware (HWEL) della MGU diverso da quello del backup: non è la stessa unità')
+    serial_then = ((backup.get('identification') or {}).get('F18C') or '').lower()
+    if serial_then and serial_now and serial_then != serial_now.hex():
+        raise CodingError('numero di serie della MGU diverso da quello del backup: non è la stessa unità')
+    if _svk_records(before, 'BTLD') != _svk_records(now, 'BTLD'):
+        raise CodingError('la MGU è stata aggiornata a un\'altra versione dopo il backup (bootloader %s, nel backup %s): '
+                          'una codifica di un\'altra versione non va riscritta, ricodificala da FA (VO) con E-Sys'
+                          % (', '.join(_svk_records(now, 'BTLD')) or '?', ', '.join(_svk_records(before, 'BTLD')) or '?'))
+    changed = sorted(set(_svk_records(now, 'SWFL')) - set(_svk_records(before, 'SWFL')))
     warnings = []
-    for name in ('HWEL', 'BTLD'):
-        if _svk_records(backup.get('svk') or [], name) != _svk_records(now, name):
-            raise CodingError('%s della MGU diverso da quello del backup: non è la stessa unità' % name)
-    if _svk_records(backup.get('svk') or [], 'SWFL') != _svk_records(now, 'SWFL'):
-        warnings.append('il software (SWFL) della MGU è diverso da quello del backup')
+    if len(changed) == 1:
+        warnings.append('un modulo software cambiato dal flash di debug (atteso): %s' % changed[0])
+    elif changed:
+        warnings.append('%d moduli software diversi dal backup: %s' % (len(changed), ', '.join(changed)))
     return warnings
 
 
@@ -172,9 +185,9 @@ class Restorer:
         self.coding_mode_set = False
 
     # trasporto
-    def _send(self, payload, what):
+    def _send(self, payload, what, timeout_ms=None):
         self.log('  TX %s  (%s)' % (_hex(payload), what))
-        resp = self.client.await_one(MGU, payload, self.timeout_ms)
+        resp = self.client.await_one(MGU, payload, timeout_ms or self.timeout_ms)
         if resp.timeout:
             self.log('  RX nessuna risposta')
             return None
@@ -233,42 +246,79 @@ class Restorer:
                 return True
         return False
 
+    def _access(self):
+        if self._security_access():
+            self.log('  accesso di sicurezza concesso')
+        else:
+            self.log('  accesso di sicurezza non concesso: provo a scrivere senza (se serve, la MGU rifiuterà la prima scrittura)')
+
+    def enter_coding_mode(self):
+        """La strada di E-Sys: setCodingMode, riavvio, sessione di codifica e accesso."""
+        self.log('Modalità codifica (setCodingMode e riavvio):')
+        if not self._session(REQ_EXTENDED, 'sessione estesa'):
+            raise CodingError('la MGU non entra in sessione estesa')
+        x = self._send(REQ_SET_CODING_MODE, 'setCodingMode')
+        if not self._positive(x, REQ_SET_CODING_MODE):
+            raise CodingError('la MGU rifiuta setCodingMode')
+        self.coding_mode_set = True
+        self._reset()
+        self.sleep(3.5)
+        if not self._session(REQ_EXTENDED, 'sessione estesa dopo il riavvio'):
+            raise CodingError('la MGU non torna in sessione estesa dopo il riavvio')
+        if not self._session(REQ_CODING_SESSION, 'sessione di codifica'):
+            raise CodingError('la MGU non concede la sessione di codifica')
+        self._access()
+
     def enter(self):
         """Porta la MGU in sessione di codifica, con l'accesso se lo concede."""
         self.log('Ingresso in codifica:')
         if not self._session(REQ_EXTENDED, 'sessione estesa'):
             raise CodingError('la MGU non entra in sessione estesa')
         if not self._session(REQ_CODING_SESSION, 'sessione di codifica'):
-            self.log('  la sessione di codifica non è stata concessa subito: provo con setCodingMode e riavvio')
-            x = self._send(REQ_SET_CODING_MODE, 'setCodingMode')
-            if not self._positive(x, REQ_SET_CODING_MODE):
-                raise CodingError('la MGU rifiuta setCodingMode')
-            self.coding_mode_set = True
-            self._reset()
-            self.sleep(3.5)
-            if not self._session(REQ_EXTENDED, 'sessione estesa dopo il riavvio'):
-                raise CodingError('la MGU non torna in sessione estesa dopo il riavvio')
-            if not self._session(REQ_CODING_SESSION, 'sessione di codifica'):
-                raise CodingError('la MGU non concede la sessione di codifica')
-        if self._security_access():
-            self.log('  accesso di sicurezza concesso')
-        else:
-            self.log('  accesso di sicurezza non concesso: provo a scrivere senza (se serve, la MGU rifiuterà la prima scrittura)')
+            self.log('  la sessione di codifica non è stata concessa subito')
+            self.enter_coding_mode()
+            return
+        self._access()
+
+    def _read(self, did, what):
+        x = self._send(bytes((0x22, did >> 8, did & 0xFF)), what)
+        return bytes(x.data[3:]) if self._positive(x, b'\x22') else None
 
     def write(self, blocks):
-        """Scrive e rilegge; si ferma al primo rifiuto. Ritorna i DID scritti."""
+        """Scrive e rilegge; si ferma al primo rifiuto. Ritorna i DID scritti.
+
+        Se la MGU non risponde a una scrittura, rilegge il blocco: se è già
+        uguale al backup la scrittura è andata e si prosegue. Se non lo è e la
+        MGU non è ancora in modalità codifica, ci passa (setCodingMode e riavvio,
+        come E-Sys) e riprova quel blocco una volta."""
         self.log('Scrittura di %d blocchi (il timbro 0x%04X per ultimo):' % (len(blocks), CPS_DID))
+        first, first_data = blocks[0]
+        now = self._read(first, 'contenuto attuale di 0x%04X' % first)
+        self.log('  0x%04X sulla MGU adesso: %s' % (first, 'non leggibile' if now is None else (
+            'uguale al backup' if now == first_data else '%d byte, diverso dal backup' % len(now))))
         written = []
         for did, data in blocks:
-            self._tester_present()
-            req = bytes((0x2E, did >> 8, did & 0xFF)) + data
-            x = self._send(req, 'scrivi 0x%04X, %d byte' % (did, len(data)))
-            if not self._positive(x, req):
+            retried = False
+            while True:
+                self._tester_present(force=True)
+                req = bytes((0x2E, did >> 8, did & 0xFF)) + data
+                x = self._send(req, 'scrivi 0x%04X, %d byte' % (did, len(data)), WRITE_TIMEOUT_MS)
+                if self._positive(x, req):
+                    break
+                if x is None:
+                    back = self._read(did, 'rileggi 0x%04X dopo il silenzio' % did)
+                    if back == data:
+                        self.log('  la MGU non ha risposto ma 0x%04X risulta scritto' % did)
+                        break
+                    if not retried and not self.coding_mode_set:
+                        retried = True
+                        self.log('  nessuna risposta e blocco non scritto: riprovo in modalità codifica')
+                        self.enter_coding_mode()
+                        continue
                 why = 'nessuna risposta' if x is None else ('MGU non raggiungibile' if x == 'unreachable'
                                                             else 'rifiuto %s' % _nrc(x.nrc))
                 raise CodingError('blocco 0x%04X non scritto (%s); %d blocchi scritti prima' % (did, why, len(written)))
-            back = self._send(bytes((0x22, did >> 8, did & 0xFF)), 'rileggi 0x%04X' % did)
-            if not self._positive(back, b'\x22') or back.data[3:] != data:
+            if self._read(did, 'rileggi 0x%04X' % did) != data:
                 raise CodingError('blocco 0x%04X scritto ma la rilettura non coincide' % did)
             written.append(did)
         self.log('  %d blocchi scritti e riletti identici' % len(written))
@@ -285,10 +335,10 @@ class Restorer:
             self.log('  uscita non completata: %s (riavviare la head unit tenendo premuta la manopola)' % e)
 
 
-def restore(client, svk_now, vin, backup, operands_blob, log, read_svk, dry_run=False, **kw):
+def restore(client, svk_now, vin, backup, operands_blob, log, read_svk, dry_run=False, serial_now=None, **kw):
     """Tutto il ripristino. Ritorna un dict con l'esito; solleva CodingError per i
     blocchi prima di toccare la MGU."""
-    warnings = check_backup(backup, vin, svk_now)
+    warnings = check_backup(backup, vin, svk_now, serial_now)
     blocks = plan(backup)
     for w in warnings:
         log('ATTENZIONE: %s' % w)

@@ -454,8 +454,12 @@ class Tool:
             folder = backups[0]['folder']
         try:
             backup = coding_mod.load_backup(folder)
+            try:
+                serial = preflight._read_did(self.client, hsfz.MGU, 0xF18C)
+            except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError, OSError):
+                serial = None
             result = coding_mod.restore(self.client, self.svk, vin, backup, self.assets.raw(7), log, diag.read_svk,
-                                        dry_run=bool(getattr(self.args, 'dry_run', False)))
+                                        dry_run=bool(getattr(self.args, 'dry_run', False)), serial_now=serial)
         except coding_mod.CodingError as e:
             log('FAILED: coding restore stopped: %s' % e)
             return EXIT_ERROR

@@ -60,7 +60,7 @@ from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).

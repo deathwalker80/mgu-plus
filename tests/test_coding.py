@@ -32,11 +32,12 @@ def svk(records):
     return SimpleNamespace(records=[Rec(r) for r in records])
 
 
-def write_backup(root, coding_blocks=CODING, vin=VIN, verified=True, records=SVK, taken='2026-11-09 10:00:00'):
+def write_backup(root, coding_blocks=CODING, vin=VIN, verified=True, records=SVK, taken='2026-11-09 10:00:00',
+                 identification=None):
     folder = os.path.join(root, '%s-%s' % (taken.replace(' ', '-').replace(':', ''), vin))
     os.makedirs(folder)
     data = {'taken': taken, 'vin': vin, 'svk': records, 'cafd': records[-1], 'coding': coding_blocks,
-            'identification': {}, 'verified': verified}
+            'identification': identification or {}, 'verified': verified}
     raw = json.dumps(data, indent=1).encode()
     Path(folder, 'backup.json').write_bytes(raw)
     Path(folder, 'SHA256SUMS').write_text('%s  backup.json\n' % hashlib.sha256(raw).hexdigest())
@@ -46,7 +47,10 @@ def write_backup(root, coding_blocks=CODING, vin=VIN, verified=True, records=SVK
 class FakeMgu:
     """A head unit that answers like the restore expects, with switches to refuse."""
 
-    def __init__(self, coding_session_first=True, refuse_did=None, seed=b'\x01' * 8, readback_wrong=None):
+    def __init__(self, coding_session_first=True, refuse_did=None, seed=b'\x01' * 8, readback_wrong=None,
+                 silent_write=None):
+        # silent_write: None, 'stored' (no answer but written) or 'until-coding-mode'
+        # (no answer and not written until setCodingMode + reset), as seen on a real ID7
         self.store = {}
         self.sent = []
         self.coding_session_first = coding_session_first
@@ -55,6 +59,7 @@ class FakeMgu:
         self.seed = seed
         self.readback_wrong = readback_wrong
         self.resets = 0
+        self.silent_write = silent_write
 
     def _resp(self, data):
         return Response(SimpleNamespace(payload=bytes(data), type=TYPE_DIAG, src=0x63, dst=0xF4))
@@ -71,14 +76,20 @@ class FakeMgu:
                 self.coding_mode = True
             return self._resp(b'\x71' + payload[1:4])
         if sid == 0x27:
-            if payload[1] in (0x11, 0x01):
+            if payload[1] == 0x11:
+                return self._resp(b'\x7f\x27\x12')  # the real ID7 refuses level 0x11
+            if payload[1] == 0x01:
                 return self._resp(bytes((0x67, payload[1])) + self.seed)
             return self._resp(bytes((0x67, payload[1])))
         if sid == 0x2E:
             did = payload[1] << 8 | payload[2]
             if did == self.refuse_did:
                 return self._resp(b'\x7f\x2e\x33')
+            if self.silent_write == 'until-coding-mode' and not self.coding_mode:
+                return Response(None, 0, True)
             self.store[did] = bytes(payload[3:])
+            if self.silent_write == 'stored':
+                return Response(None, 0, True)
             return self._resp(b'\x6e' + payload[1:3])
         if sid == 0x22:
             did = payload[1] << 8 | payload[2]
@@ -134,6 +145,18 @@ class BackupTests(unittest.TestCase):
         other_sw = [SVK[0], SVK[1], 'SWFL 00004A11_031.000.000', SVK[3]]
         self.assertEqual(len(coding.check_backup(good, VIN, svk(other_sw))), 1)
 
+    def test_updated_software_and_other_unit_are_refused(self):
+        good = {'verified': True, 'vin': VIN, 'svk': SVK, 'identification': {'F18C': '0001348065'}}
+        self.assertEqual(coding.check_backup(good, VIN, svk(SVK), bytes.fromhex('0001348065')), [])
+        with self.assertRaises(coding.CodingError) as e:
+            coding.check_backup(good, VIN, svk(SVK), bytes.fromhex('0001348066'))
+        self.assertIn('numero di serie', str(e.exception))
+        updated = [SVK[0], 'BTLD 00003F36_001.009.000'] + SVK[2:]
+        with self.assertRaises(coding.CodingError) as e:
+            coding.check_backup(good, VIN, svk(updated), bytes.fromhex('0001348065'))
+        self.assertIn('aggiornata', str(e.exception))
+        self.assertIn('E-Sys', str(e.exception))
+
 
 class RestoreTests(unittest.TestCase):
     def run_restore(self, mgu, svk_after=None):
@@ -154,7 +177,8 @@ class RestoreTests(unittest.TestCase):
         self.assertTrue(result['cafd_set'])
         writes = [p for p in mgu.sent if p[0] == 0x2E]
         self.assertEqual(writes[-1][1:3], b'\x37\xfe')
-        key = [p for p in mgu.sent if p[0] == 0x27 and p[1] == 0x12]
+        self.assertNotIn(bytes.fromhex('27 11 FF FF FF FF'), mgu.sent)  # level 0x01 is granted first
+        key = [p for p in mgu.sent if p[0] == 0x27 and p[1] == 0x02]
         self.assertEqual(len(key), 1)
         self.assertEqual(len(key[0]), 134)
         self.assertEqual(mgu.sent[-1], bytes.fromhex('11 01'))
@@ -167,6 +191,38 @@ class RestoreTests(unittest.TestCase):
         self.assertIn(bytes.fromhex('31 01 10 0D'), mgu.sent)
         self.assertIn(bytes.fromhex('31 01 10 0F'), mgu.sent)
         self.assertEqual(mgu.resets, 2)
+
+    def test_silent_write_that_was_stored_goes_on(self):
+        mgu = FakeMgu(silent_write='stored')
+        result, lines = self.run_restore(mgu)
+        self.assertEqual(result['written'], 3)
+        self.assertNotIn(bytes.fromhex('31 01 10 0D'), mgu.sent)
+        self.assertTrue(any('risulta scritto' in l for l in lines))
+
+    def test_silent_write_retries_once_in_coding_mode(self):
+        mgu = FakeMgu(silent_write='until-coding-mode')
+        result, lines = self.run_restore(mgu)
+        self.assertEqual(result['written'], 3)
+        self.assertIn(bytes.fromhex('31 01 10 0D'), mgu.sent)
+        self.assertIn(bytes.fromhex('31 01 10 0F'), mgu.sent)
+        self.assertEqual(mgu.resets, 2)
+
+    def test_silent_write_in_coding_mode_too_stops(self):
+        mgu = FakeMgu(silent_write='until-coding-mode', coding_session_first=True)
+        mgu.coding_mode = False
+        original = mgu.await_one
+
+        def never(dst, payload, timeout_ms):
+            if payload[0] == 0x2E:
+                mgu.sent.append(bytes(payload))
+                return Response(None, 0, True)
+            return original(dst, payload, timeout_ms)
+        mgu.await_one = never
+        with self.assertRaises(coding.CodingError) as e:
+            self.run_restore(mgu)
+        self.assertIn('nessuna risposta', str(e.exception))
+        self.assertEqual(len([p for p in mgu.sent if p[0] == 0x2E]), 2)  # one retry only
+        self.assertEqual(mgu.sent[-1], bytes.fromhex('11 01'))
 
     def test_stops_at_first_refusal_and_still_leaves(self):
         mgu = FakeMgu(refuse_did=0x3001)
