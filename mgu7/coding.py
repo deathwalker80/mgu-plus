@@ -153,8 +153,10 @@ def check_backup(backup, vin, svk_now, serial_now=None):
     if serial_then and serial_now and serial_then != serial_now.hex():
         raise CodingError('numero di serie della MGU diverso da quello del backup: non è la stessa unità')
     if _svk_records(before, 'BTLD') != _svk_records(now, 'BTLD'):
-        raise CodingError('la MGU è stata aggiornata a un\'altra versione dopo il backup (bootloader %s, nel backup %s): '
-                          'una codifica di un\'altra versione non va riscritta, ricodificala da FA (VO) con E-Sys'
+        raise CodingError('la MGU riporta un bootloader diverso da quello del backup (adesso %s, nel backup %s): '
+                          'non riscrivo una codifica presa su un\'altra versione software. Se la MGU non è stata '
+                          'aggiornata, spegni e riaccendi il quadro e riprova; se è stata aggiornata, ricodificala '
+                          'da FA (VO) con E-Sys'
                           % (', '.join(_svk_records(now, 'BTLD')) or '?', ', '.join(_svk_records(before, 'BTLD')) or '?'))
     changed = sorted(set(_svk_records(now, 'SWFL')) - set(_svk_records(before, 'SWFL')))
     warnings = []
@@ -338,6 +340,21 @@ class Restorer:
 def restore(client, svk_now, vin, backup, operands_blob, log, read_svk, dry_run=False, serial_now=None, **kw):
     """Tutto il ripristino. Ritorna un dict con l'esito; solleva CodingError per i
     blocchi prima di toccare la MGU."""
+    before = backup.get('svk') or []
+    if (svk_now is not None and not dry_run
+            and _svk_records(before, 'BTLD') != _svk_records([str(r) for r in svk_now.records], 'BTLD')):
+        # una lettura fatta mentre la MGU si sta ancora avviando può non essere quella definitiva
+        log('Bootloader diverso dal backup (%s): rileggo le versioni fra 10 secondi'
+            % ', '.join(_svk_records([str(r) for r in svk_now.records], 'BTLD')))
+        (kw.get('sleep') or time.sleep)(10)
+        try:
+            again = read_svk(client)
+        except Exception as e:  # la verifica sotto decide comunque
+            log('  rilettura non riuscita: %s' % e)
+            again = None
+        if again is not None:
+            svk_now = again
+            log('  bootloader riletto: %s' % ', '.join(_svk_records([str(r) for r in svk_now.records], 'BTLD')))
     warnings = check_backup(backup, vin, svk_now, serial_now)
     blocks = plan(backup)
     for w in warnings:

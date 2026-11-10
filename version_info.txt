@@ -2,8 +2,8 @@
 # Keep filevers/prodvers and the strings in step with APP_VERSION in gui.py.
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 3, 2, 0),
-    prodvers=(1, 3, 2, 0),
+    filevers=(1, 3, 3, 0),
+    prodvers=(1, 3, 3, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -18,11 +18,11 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'DeathWalkeR'),
           StringStruct('FileDescription', 'MGU Plus'),
-          StringStruct('FileVersion', '1.3.2'),
+          StringStruct('FileVersion', '1.3.3'),
           StringStruct('InternalName', 'MGU-Plus'),
           StringStruct('OriginalFilename', 'MGU-Plus.exe'),
           StringStruct('ProductName', 'MGU Plus'),
-          StringStruct('ProductVersion', '1.3.2')
+          StringStruct('ProductVersion', '1.3.3')
         ]
       )
     ]),

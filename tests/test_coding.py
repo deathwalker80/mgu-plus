@@ -145,7 +145,7 @@ class BackupTests(unittest.TestCase):
         other_sw = [SVK[0], SVK[1], 'SWFL 00004A11_031.000.000', SVK[3]]
         self.assertEqual(len(coding.check_backup(good, VIN, svk(other_sw))), 1)
 
-    def test_updated_software_and_other_unit_are_refused(self):
+    def test_other_software_and_other_unit_are_refused(self):
         good = {'verified': True, 'vin': VIN, 'svk': SVK, 'identification': {'F18C': '0001348065'}}
         self.assertEqual(coding.check_backup(good, VIN, svk(SVK), bytes.fromhex('0001348065')), [])
         with self.assertRaises(coding.CodingError) as e:
@@ -154,7 +154,7 @@ class BackupTests(unittest.TestCase):
         updated = [SVK[0], 'BTLD 00003F36_001.009.000'] + SVK[2:]
         with self.assertRaises(coding.CodingError) as e:
             coding.check_backup(good, VIN, svk(updated), bytes.fromhex('0001348065'))
-        self.assertIn('aggiornata', str(e.exception))
+        self.assertIn("bootloader diverso", str(e.exception))
         self.assertIn('E-Sys', str(e.exception))
 
 
@@ -191,6 +191,33 @@ class RestoreTests(unittest.TestCase):
         self.assertIn(bytes.fromhex('31 01 10 0D'), mgu.sent)
         self.assertIn(bytes.fromhex('31 01 10 0F'), mgu.sent)
         self.assertEqual(mgu.resets, 2)
+
+    def test_bootloader_read_during_boot_is_read_again(self):
+        booting = svk([SVK[0], 'BTLD 00003F36_009.009.009'] + SVK[2:3] + ['CAFD FFFFFFFF_255.255.255'])
+        reads = []
+
+        def read_svk(client):
+            reads.append(1)
+            return svk(SVK[:3] + ['CAFD FFFFFFFF_255.255.255']) if len(reads) == 1 else svk(SVK)
+        mgu = FakeMgu()
+        lines = []
+        with tempfile.TemporaryDirectory() as d:
+            backup = coding.load_backup(write_backup(d))
+            result = coding.restore(mgu, booting, VIN, backup, assets.Assets().raw(7), lines.append, read_svk,
+                                    sleep=lambda s: None, reachable_wait_ms=10, reachable_poll_ms=1)
+        self.assertEqual(result['written'], 3)
+        self.assertTrue(any('rileggo le versioni' in l for l in lines))
+
+    def test_bootloader_still_different_after_reading_again_stops(self):
+        other = svk([SVK[0], 'BTLD 00003F36_009.009.009'] + SVK[2:3] + ['CAFD FFFFFFFF_255.255.255'])
+        mgu = FakeMgu()
+        with tempfile.TemporaryDirectory() as d:
+            backup = coding.load_backup(write_backup(d))
+            with self.assertRaises(coding.CodingError) as e:
+                coding.restore(mgu, other, VIN, backup, assets.Assets().raw(7), lambda *_: None, lambda c: other,
+                               sleep=lambda s: None)
+        self.assertIn('bootloader diverso', str(e.exception))
+        self.assertEqual([p for p in mgu.sent if p[0] in (0x10, 0x2E)], [])  # nothing sent to the MGU
 
     def test_silent_write_that_was_stored_goes_on(self):
         mgu = FakeMgu(silent_write='stored')

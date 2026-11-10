@@ -1,4 +1,4 @@
-> **MGU Plus 1.3.2** - this copy is MGU Plus: an Italian, single-window GUI
+> **MGU Plus 1.3.3** - this copy is MGU Plus: an Italian, single-window GUI
 > (`gui.py`) over this tool that also installs, updates and removes
 > [mgu-store](https://github.com/robertnisipeanu/mgu-store) over the root SSH
 > access, shows the installed against the newest published versions, and works
