@@ -1,4 +1,4 @@
-﻿MGU Plus  -  versione 1.3.3
+﻿MGU Plus  -  versione 1.3.4
 ===========================
 
 Root SSH e App Store (mgu-store) sulle head unit BMW MGU iDrive 7, da un PC Windows.

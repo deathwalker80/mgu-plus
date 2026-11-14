@@ -60,7 +60,7 @@ from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.3"
+APP_VERSION = "1.3.4"
 WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
@@ -94,6 +94,7 @@ MUTED = "#8793a5"
 ACCENT = "#1c69d4"
 ACCENT_HI = "#2f7ff0"
 ACCENT_LO = "#123f80"
+BRAND = "#3fd0f0"          # il ciano del logo
 OK = "#2fbf71"
 WARN = "#f0a030"
 ERR = "#e5484d"
@@ -328,6 +329,8 @@ class App:
         tk.Label(top, text="MGU PLUS", bg=SURFACE, fg=TEXT, font=(FONT, 17, "bold")).pack(side="left")
         tk.Label(top, text="v" + APP_VERSION, bg=SURFACE, fg=MUTED,
                  font=(FONT, 9)).pack(side="left", padx=(8, 0), pady=(7, 0))
+        tk.Label(top, text="by DeathWalkeR", bg=SURFACE, fg=BRAND,
+                 font=(FONT, 9, "bold italic")).pack(side="left", padx=(10, 0), pady=(7, 0))
         tk.Label(titles, text="Root SSH e App Store per BMW iDrive 7  ·  iDrive 8 sperimentale", bg=SURFACE, fg=MUTED,
                  font=(FONT, 9)).pack(anchor="w")
 
