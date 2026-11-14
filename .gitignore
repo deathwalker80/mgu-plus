@@ -17,3 +17,5 @@ dist/
 data/preflight/
 # mgu-store installer downloaded at run time (GPL-3.0, from its own release)
 data/mgu-store/
+# Language chosen in the window (Italiano / English)
+data/settings.json

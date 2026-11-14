@@ -1,9 +1,12 @@
 <!-- prerelease -->
-## MGU Plus 1.3.5 (beta, da provare in auto)
+## MGU Plus 1.3.6 (beta, da provare in auto)
 
-Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. In italiano, con la stessa grafica di NBT Companion.
+Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. In italiano o in inglese, con la stessa grafica di NBT Companion.
 
-**Da scaricare:** `MGU-Plus-windows-1.3.5.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+**Da scaricare:** `MGU-Plus-windows-1.3.6.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+
+### Novità della 1.3.6
+- Pulsante "English" / "Italiano" nell'intestazione, come in NBT Companion: cambia la lingua di tutta la finestra (pagine, messaggi e log) senza perdere campi, pagina aperta e log. La scelta resta ai prossimi avvii.
 
 ### Novità della 1.3.5
 - Grafica allineata a NBT Companion: stessi colori, intestazione con logo e "by DeathWalkeR", pastiglie di stato in alto (vettura, SSH, codifica, Store, operazione in corso), pagine a sinistra (Collegamento, Accesso SSH, Codifica, App Store), pulsanti arrotondati, log completo in basso.

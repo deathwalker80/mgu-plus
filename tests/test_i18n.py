@@ -394,5 +394,83 @@ class ProgramUpdateTests(unittest.TestCase):
             root.destroy()
 
 
+class LanguageTests(unittest.TestCase):
+    """Pulsante Italiano / English come in NBT Companion."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.settings = str(Path(self.dir.name, 'settings.json'))
+        self.patch = patch.object(gui, 'SETTINGS_FILE', self.settings)
+        self.patch.start()
+        self.root = gui.tk.Tk()
+        self.root.withdraw()
+        self.app = gui.App(self.root, auto_check=False)
+
+    def tearDown(self):
+        self.root.destroy()
+        gui._language[0] = 'it'
+        self.patch.stop()
+        self.dir.cleanup()
+
+    def test_starts_in_italian_without_settings(self):
+        self.assertEqual(self.app.btn_language.cget('text'), 'English')
+        self.assertEqual(self.app.btn_check.cget('text'), 'Connetti vettura')
+
+    def test_switch_to_english_and_back_keeps_fields_page_and_log(self):
+        app = self.app
+        app.vin.set('TESTVIN1234567890')
+        app.variant_label.set(gui.VARIANT_CHOICES[1][1])
+        app._on_variant(gui.VARIANT_CHOICES[1][1])
+        app.show_page('store')
+        app._append('[12:34:56] Found gateway 169.254.1.2 | VIN: TESTVIN1234567890\n')
+        self.assertIn('Trovato il gateway', app.out.get('1.0', 'end'))
+
+        app.toggle_language()
+        self.assertEqual(json.loads(Path(self.settings).read_text(encoding='utf-8'))['language'], 'en')
+        self.assertEqual(app.btn_language.cget('text'), 'Italiano')
+        self.assertEqual(app.btn_check.cget('text'), 'Connect car')
+        self.assertEqual(app.btn_store.cget('text'), 'Install / Update')
+        self.assertEqual(app.card_car.chip.cget('text'), 'Car: not connected')
+        self.assertEqual(app.vin.get(), 'TESTVIN1234567890')
+        self.assertEqual(app.variant_label.get(), gui.VARIANT_CHOICES_EN[1][1])
+        self.assertEqual(app.arch.get(), gui.VARIANT_CHOICES_EN[1][0])
+        self.assertEqual(app.current_page, 'store')
+        self.assertIn('Found gateway 169.254.1.2', app.out.get('1.0', 'end'))
+        self.assertNotIn('Trovato il gateway', app.out.get('1.0', 'end'))
+
+        app.toggle_language()
+        self.assertEqual(json.loads(Path(self.settings).read_text(encoding='utf-8'))['language'], 'it')
+        self.assertEqual(app.btn_check.cget('text'), 'Connetti vettura')
+        self.assertEqual(app.variant_label.get(), gui.VARIANT_CHOICES[1][1])
+        self.assertIn('Trovato il gateway', app.out.get('1.0', 'end'))
+
+    def test_english_is_remembered_at_the_next_start(self):
+        self.app.toggle_language()
+        self.root.destroy()
+        gui._language[0] = 'it'
+        self.root = gui.tk.Tk()
+        self.root.withdraw()
+        app = gui.App(self.root, auto_check=False)
+        self.assertEqual(app.btn_check.cget('text'), 'Connect car')
+        self.assertEqual(app.variant_label.get(), gui.VARIANT_PROMPT_EN)
+
+    def test_no_switch_while_busy(self):
+        self.app._busy(True, 'test')
+        self.app.toggle_language()
+        self.assertEqual(self.app.btn_check.cget('text'), 'Connetti vettura')
+        self.app._busy(False)
+
+    def test_english_state_texts(self):
+        self.app.toggle_language()
+        self.app.state = GuiTests.sample_state(None)
+        self.app._refresh()
+        self.assertEqual(self.app.card_car.chip.cget('text'), 'Car: connected via ENET, MGU 169.254.199.99')
+        self.assertEqual(self.app.card_ssh.chip.cget('text'), 'SSH: root active')
+        self.assertEqual(self.app.card_store.chip.cget('text'), 'Store: 1 update')
+        self.assertEqual(self.app.store_line.cget('text'), 'Store 0.9.30 installed: 1 update available.')
+        rows = [self.app.tree.item(i, 'values') for i in self.app.tree.get_children()]
+        self.assertEqual(rows[1], ('Store', '0.9.30', '0.9.33', 'Update available'))
+
+
 if __name__ == '__main__':
     unittest.main()
