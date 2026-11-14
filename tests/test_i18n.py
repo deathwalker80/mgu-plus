@@ -103,20 +103,19 @@ class GuiTests(unittest.TestCase):
                 'store': {'installed': installed, 'rows': compared, 'summary': store.summarize(compared, installed)}}
 
     def test_italian_window_with_version_in_title(self):
-        self.assertEqual(self.root.title(), 'MGU Plus %s' % gui.APP_VERSION)
+        self.assertEqual(self.root.title(), 'MGU Plus %s by DeathWalkeR' % gui.APP_VERSION)
         self.assertEqual(self.app.btn_check.cget('text'), 'Connetti vettura')
         self.assertEqual(self.app.btn_flash.cget('text'), 'Flash + Apri SSH')
         self.assertEqual(self.app.btn_store.cget('text'), 'Installa / Aggiorna')
-        self.assertEqual(self.app.card_car.chip.cget('text'), 'NON COLLEGATA')
+        self.assertEqual(self.app.card_car.chip.cget('text'), 'Vettura: non collegata')
         self.assertEqual(self.app.variant_label.get(), gui.VARIANT_PROMPT)
 
     def test_state_fills_cards_and_table(self):
         self.app.state = self.sample_state()
         self.app._refresh()
-        self.assertEqual(self.app.card_car.chip.cget('text'), 'COLLEGATA · ENET')
-        self.assertEqual(self.app.link.cget('text'), 'ENET · MGU 169.254.199.99')
-        self.assertEqual(self.app.card_ssh.chip.cget('text'), 'ROOT ATTIVO')
-        self.assertEqual(self.app.card_store.chip.cget('text'), '1 AGGIORNAMENTO')
+        self.assertEqual(self.app.card_car.chip.cget('text'), 'Vettura: collegata via ENET, MGU 169.254.199.99')
+        self.assertEqual(self.app.card_ssh.chip.cget('text'), 'SSH: root attivo')
+        self.assertEqual(self.app.card_store.chip.cget('text'), 'Store: 1 aggiornamento')
         self.assertEqual(self.app.car_serial.cget('text'), '0000123456789')
         self.assertEqual(self.app.car_hardware.cget('text'), '00003F2A_030.016.002')
         rows = [self.app.tree.item(i, 'values') for i in self.app.tree.get_children()]
@@ -135,9 +134,9 @@ class GuiTests(unittest.TestCase):
             self.app._check_done(0)
         self.assertEqual(self.app.gateway.get(), 'hotspot')
         self.assertEqual(self.app.mgu_ip.get(), '172.16.222.97')
-        self.assertEqual(self.app.card_car.chip.cget('text'), 'COLLEGATA · HOTSPOT')
-        self.assertEqual(self.app.card_ssh.chip.cget('text'), 'CHIAVE RIFIUTATA')
-        self.assertEqual(self.app.card_store.chip.cget('text'), 'DA VERIFICARE')
+        self.assertEqual(self.app.card_car.chip.cget('text'), 'Vettura: collegata via hotspot, MGU 172.16.222.97')
+        self.assertEqual(self.app.card_ssh.chip.cget('text'), 'SSH: chiave rifiutata')
+        self.assertEqual(self.app.card_store.chip.cget('text'), 'Store: da verificare')
         self.assertIn('Ultimo Store pubblicato: 0.9.33', self.app.store_line.cget('text'))
 
     def test_buttons_send_the_right_actions(self):
@@ -292,11 +291,11 @@ class StoreLatestTests(unittest.TestCase):
         self.app.state = {'car': {'via': 'enet', 'mgu_ip': '169.254.199.99'}, 'root': {'active': True},
                           'store': {'installed': installed, 'rows': old, 'summary': store.summarize(old, installed)}}
         self.app._refresh()
-        self.assertEqual(self.app.card_store.chip.cget('text'), 'AGGIORNATO')
+        self.assertEqual(self.app.card_store.chip.cget('text'), 'Store: aggiornato')
         with patch.object(gui.messagebox, 'showinfo') as info:
             self.app._store_latest_done(self.rows, True, 'abc', None)
         self.assertIn('Componenti da aggiornare o installare: 1', info.call_args.args[1])
-        self.assertEqual(self.app.card_store.chip.cget('text'), '1 AGGIORNAMENTO')
+        self.assertEqual(self.app.card_store.chip.cget('text'), 'Store: 1 aggiornamento')
 
     def test_failure_is_reported(self):
         with patch.object(gui.messagebox, 'showwarning') as warn:

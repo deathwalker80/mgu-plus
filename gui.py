@@ -1,12 +1,14 @@
 """MGU Plus - root SSH e App Store (mgu-store) per le head unit BMW MGU
-(iDrive 7 / iDrive 8), in una sola schermata: Connessione vettura, Accesso SSH
-MGU, Applicazioni MGU.
+(iDrive 7 / iDrive 8). Stessa impaginazione di NBT Companion: intestazione,
+pastiglie di stato, elenco delle pagine a sinistra (Collegamento, Accesso SSH,
+Codifica, App Store), pagina al centro, registro completo in basso.
 
 Interfaccia Tkinter sopra ssh_enable.py: ogni azione esegue ssh_enable.main in
 un thread e ne mostra il registro nella finestra, esattamente come da riga di
 comando. "Connetti vettura" (azione `check`) scrive data/mgu-store/state.json,
-che riempie i tre riquadri: la vettura, se root SSH risponde, e le versioni
-dello Store sulla head unit confrontate con le ultime pubblicate.
+che riempie le pagine e le pastiglie di stato: la vettura, se root SSH
+risponde, e le versioni dello Store sulla head unit confrontate con le ultime
+pubblicate.
 
 Si impacchetta in un .exe per Windows con PyInstaller (build_exe.bat).
 """
@@ -22,6 +24,7 @@ import urllib.request
 import webbrowser
 
 import tkinter as tk
+from tkinter import font as tkfont
 from tkinter import messagebox, ttk
 
 if getattr(sys, "frozen", False):
@@ -58,10 +61,13 @@ from mgu7 import discovery
 from mgu7 import store as store_mod
 from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
+from widgets import (ACCENT, BACK, BAD, BODY, BOLD, BORDER, DIM, FIELD, GOOD, HEADING, MONO, PANEL, SMALL, TEXT,
+                     WARN, WHITE, BusyBar, Card, Chip, Field, NavItem, RoundButton, entry)
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.4"
-WINDOW_TITLE = "%s %s" % (APP_NAME, APP_VERSION)
+APP_VERSION = "1.3.5"
+AUTHOR = "DeathWalkeR"
+WINDOW_TITLE = "%s %s by %s" % (APP_NAME, APP_VERSION, AUTHOR)
 LANGUAGE = "it"
 # Dove mgu-store pubblica le sue versioni (release "catalog" su GitHub).
 STORE_REPO = "robertnisipeanu/mgu-store"
@@ -83,36 +89,15 @@ VARIANT_CHOICES = (
 )
 _VARIANT_BY_LABEL = {label: code for code, label in VARIANT_CHOICES}
 
-# Tavolozza: lo scuro dell'iDrive - superfici antracite, accento blu BMW.
-BG = "#0a0d12"
-SURFACE = "#11161e"
-SURFACE2 = "#171e28"
-HOVER = "#1f2836"
-BORDER = "#242f3f"
-TEXT = "#e6ebf2"
-MUTED = "#8793a5"
-ACCENT = "#1c69d4"
-ACCENT_HI = "#2f7ff0"
-ACCENT_LO = "#123f80"
-BRAND = "#3fd0f0"          # il ciano del logo
-OK = "#2fbf71"
-WARN = "#f0a030"
-ERR = "#e5484d"
-DISABLED_BG = "#19202a"
-DISABLED_FG = "#566173"
-CONSOLE_BG = "#06090d"
-CONSOLE_FG = "#c9d3e0"
-M_STRIPES = ("#4aa3ff", "#1c3f94", "#e2231a")
-FONT = "Segoe UI"
-MONO = "Consolas"
+# Tavolozza e caratteri: quelli di NBT Companion, in widgets.py.
 
 # Stato delle righe della tabella (mgu7/store.py compare()) -> testo, colore.
 ROW_TEXT = {
-    store_mod.ROW_CURRENT: ("Aggiornato", OK),
+    store_mod.ROW_CURRENT: ("Aggiornato", GOOD),
     store_mod.ROW_UPDATE: ("Aggiornamento disponibile", WARN),
-    store_mod.ROW_MISSING: ("Non installato", ACCENT_HI),
-    store_mod.ROW_NEWER: ("Più recente di quella pubblicata", MUTED),
-    store_mod.ROW_OTHER: ("Installato (altra fonte)", MUTED),
+    store_mod.ROW_MISSING: ("Non installato", ACCENT),
+    store_mod.ROW_NEWER: ("Più recente di quella pubblicata", DIM),
+    store_mod.ROW_OTHER: ("Installato (altra fonte)", DIM),
 }
 
 
@@ -171,9 +156,9 @@ class App:
         self._store_error = None
 
         root.title(WINDOW_TITLE)
-        root.configure(bg=BG)
-        root.minsize(1240, 680)
-        height = min(880, max(680, root.winfo_screenheight() - 80))
+        root.configure(bg=BACK)
+        root.minsize(1100, 760)
+        height = min(900, max(760, root.winfo_screenheight() - 80))
         root.geometry("1280x%d" % height)
         self._set_icon()
 
@@ -217,51 +202,30 @@ class App:
             st.theme_use("clam")
         except tk.TclError:
             pass
-        st.configure(".", background=BG, foreground=TEXT, font=(FONT, 10), bordercolor=BORDER,
-                     lightcolor=BORDER, darkcolor=BORDER, troughcolor=SURFACE, focuscolor=ACCENT,
-                     selectbackground=ACCENT_LO, selectforeground=TEXT, insertcolor=TEXT)
+        st.configure(".", background=BACK, foreground=TEXT, font=BODY, bordercolor=BORDER,
+                     lightcolor=BORDER, darkcolor=BORDER, troughcolor=PANEL, focuscolor=ACCENT,
+                     selectbackground=ACCENT, selectforeground=WHITE, insertcolor=TEXT)
 
-        def button(name, bg, fg, active, border):
-            st.configure(name, background=bg, foreground=fg, font=(FONT, 9, "bold"), padding=(9, 7),
-                         borderwidth=1, bordercolor=border, lightcolor=bg, darkcolor=bg, focuscolor=bg,
-                         relief="flat", anchor="center")
-            st.map(name,
-                   background=[("disabled", DISABLED_BG), ("pressed", active), ("active", active)],
-                   foreground=[("disabled", DISABLED_FG)],
-                   bordercolor=[("disabled", DISABLED_BG), ("active", border)],
-                   lightcolor=[("disabled", DISABLED_BG), ("active", active)],
-                   darkcolor=[("disabled", DISABLED_BG), ("active", active)])
-
-        button("Primary.TButton", ACCENT, "#ffffff", ACCENT_HI, ACCENT)
-        button("Secondary.TButton", SURFACE2, TEXT, HOVER, BORDER)
-        button("Danger.TButton", "#231518", "#ff8f92", "#321b20", "#4a2329")
-        button("Small.TButton", SURFACE2, TEXT, HOVER, BORDER)
-        st.configure("Small.TButton", padding=(9, 4))
-
-        st.configure("TEntry", fieldbackground=SURFACE2, foreground=TEXT, insertcolor=TEXT,
-                     bordercolor=BORDER, lightcolor=SURFACE2, darkcolor=SURFACE2, padding=5)
-        st.map("TEntry", bordercolor=[("focus", ACCENT)], lightcolor=[("focus", ACCENT)])
-
-        st.configure("TCombobox", fieldbackground=SURFACE2, background=SURFACE2, foreground=TEXT,
-                     arrowcolor=TEXT, bordercolor=BORDER, lightcolor=SURFACE2, darkcolor=SURFACE2, padding=4,
+        st.configure("TCombobox", fieldbackground=FIELD, background=FIELD, foreground=TEXT,
+                     arrowcolor=TEXT, bordercolor=BORDER, lightcolor=FIELD, darkcolor=FIELD, padding=(8, 6),
                      arrowsize=13)
         st.map("TCombobox",
-               fieldbackground=[("readonly", SURFACE2)], background=[("readonly", SURFACE2), ("active", HOVER)],
-               foreground=[("readonly", TEXT)], selectbackground=[("readonly", SURFACE2)],
+               fieldbackground=[("readonly", FIELD)], background=[("readonly", FIELD), ("active", BORDER)],
+               foreground=[("readonly", TEXT)], selectbackground=[("readonly", FIELD)],
                selectforeground=[("readonly", TEXT)], bordercolor=[("focus", ACCENT)],
-               arrowcolor=[("disabled", DISABLED_FG)])
-        self.root.option_add("*TCombobox*Listbox.background", SURFACE2)
+               lightcolor=[("focus", FIELD)], arrowcolor=[("disabled", DIM)])
+        self.root.option_add("*TCombobox*Listbox.background", FIELD)
         self.root.option_add("*TCombobox*Listbox.foreground", TEXT)
         self.root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
-        self.root.option_add("*TCombobox*Listbox.selectForeground", "#ffffff")
-        self.root.option_add("*TCombobox*Listbox.font", (FONT, 10))
+        self.root.option_add("*TCombobox*Listbox.selectForeground", WHITE)
+        self.root.option_add("*TCombobox*Listbox.font", BODY)
         self.root.option_add("*TCombobox*Listbox.borderWidth", 0)
 
-        st.configure("Dark.TCheckbutton", background=SURFACE, foreground=TEXT, font=(FONT, 9),
-                     indicatorbackground=SURFACE2, indicatorforeground="#ffffff", indicatorrelief="flat",
-                     indicatormargin=(0, 0, 8, 0), focuscolor=SURFACE, bordercolor=BORDER)
-        st.map("Dark.TCheckbutton", background=[("active", SURFACE)],
-               indicatorbackground=[("selected", ACCENT), ("active", HOVER)])
+        st.configure("Dark.TCheckbutton", background=PANEL, foreground=TEXT, font=BODY,
+                     indicatorbackground=FIELD, indicatorforeground=WHITE, indicatorrelief="flat",
+                     indicatormargin=(0, 0, 8, 0), focuscolor=PANEL, bordercolor=BORDER, padding=(0, 4))
+        st.map("Dark.TCheckbutton", background=[("active", PANEL)],
+               indicatorbackground=[("selected", ACCENT), ("active", BORDER)])
 
         # Solo il cursore in una guida scura: niente frecce, niente aspetto di serie.
         for orient in ("Vertical", "Horizontal"):
@@ -269,201 +233,213 @@ class App:
             st.layout(name, [("%s.Scrollbar.trough" % orient, {
                 "children": [("%s.Scrollbar.thumb" % orient, {"expand": "1", "sticky": "nswe"})],
                 "sticky": "ns" if orient == "Vertical" else "we"})])
-            st.configure(name, background="#2a3546", troughcolor=SURFACE2, bordercolor=SURFACE2,
-                         lightcolor="#2a3546", darkcolor="#2a3546", gripcount=0, arrowsize=9)
-            st.map(name, background=[("active", "#3b4b62")])
+            st.configure(name, background=BORDER, troughcolor=FIELD, bordercolor=FIELD,
+                         lightcolor=BORDER, darkcolor=BORDER, gripcount=0, arrowsize=9)
+            st.map(name, background=[("active", DIM)])
 
-        st.configure("Dark.Treeview", background=SURFACE2, fieldbackground=SURFACE2, foreground=TEXT,
-                     rowheight=25, bordercolor=BORDER, lightcolor=SURFACE2, darkcolor=SURFACE2,
-                     font=(FONT, 9))
-        st.map("Dark.Treeview", background=[("selected", ACCENT_LO)], foreground=[("selected", "#ffffff")])
-        st.configure("Dark.Treeview.Heading", background=SURFACE, foreground=MUTED, relief="flat",
-                     bordercolor=BORDER, lightcolor=SURFACE, darkcolor=SURFACE, font=(FONT, 9, "bold"),
-                     padding=(8, 5))
-        st.map("Dark.Treeview.Heading", background=[("active", SURFACE)])
+        # Tabella come la ListView di NBT Companion: intestazione sul fondo del
+        # riquadro, righe sul fondo dei campi, selezione blu.
+        st.configure("Dark.Treeview", background=FIELD, fieldbackground=FIELD, foreground=TEXT,
+                     rowheight=26, bordercolor=FIELD, lightcolor=FIELD, darkcolor=FIELD, font=BODY)
+        st.map("Dark.Treeview", background=[("selected", ACCENT)], foreground=[("selected", WHITE)])
+        st.configure("Dark.Treeview.Heading", background=PANEL, foreground=DIM, relief="flat",
+                     bordercolor=BORDER, lightcolor=PANEL, darkcolor=PANEL, font=BOLD, padding=(6, 6))
+        st.map("Dark.Treeview.Heading", background=[("active", PANEL)])
         st.layout("Dark.Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
-
-        st.configure("Dark.Horizontal.TProgressbar", troughcolor=SURFACE2, background=ACCENT,
-                     bordercolor=SURFACE2, lightcolor=ACCENT, darkcolor=ACCENT, thickness=6)
 
     # --- impaginazione ----------------------------------------------------
 
     def _build(self):
+        root = self.root
+        root.columnconfigure(0, minsize=262, weight=0)
+        root.columnconfigure(1, weight=1)
+        for row, size in ((0, 64), (1, 3), (2, 46), (4, 200)):
+            root.rowconfigure(row, minsize=size, weight=0)
+        root.rowconfigure(3, weight=1)
+
         self._build_header()
+        self.busy_bar = BusyBar(root)
+        self.busy_bar.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        self._build_chips()
 
-        main = tk.Frame(self.root, bg=BG)
-        main.pack(fill="x", padx=14, pady=(12, 0))
-        main.columnconfigure(0, minsize=610)
-        main.columnconfigure(1, weight=1)
-        self.card_car = self._build_car_card(main)
-        self.card_car.grid(row=0, column=0, sticky="nsew", padx=(0, 12), pady=(0, 12))
-        self.card_ssh = self._build_ssh_card(main)
-        self.card_ssh.grid(row=1, column=0, sticky="nsew", padx=(0, 12))
-        self.card_store = self._build_store_card(main)
-        self.card_store.grid(row=0, column=1, rowspan=2, sticky="nsew")
-
-        bar = tk.Frame(self.root, bg=BG)
-        bar.pack(fill="x", padx=14, pady=(9, 7))
-        self.progress = ttk.Progressbar(bar, mode="determinate", value=0, style="Dark.Horizontal.TProgressbar")
-        self.progress.pack(side="left", fill="x", expand=True)
-        self.status = tk.Label(bar, text="Pronto: collega il cavo ENET (o l'hotspot dell'auto) e premi "
-                               "“Connetti vettura”.", bg=BG, fg=MUTED, font=(FONT, 9), anchor="e")
-        self.status.pack(side="left", padx=(14, 0))
+        nav = tk.Frame(root, bg=PANEL)
+        nav.grid(row=3, column=0, sticky="nsew")
+        self.host = tk.Frame(root, bg=BACK)
+        self.host.grid(row=3, column=1, sticky="nsew", padx=20, pady=(6, 8))
+        self.host.rowconfigure(0, weight=1)
+        self.host.columnconfigure(0, weight=1)
+        self.pages = {}
+        self.nav_items = {}
+        self.card_car = self._build_car_page()
+        self.card_ssh = self._build_ssh_page()
+        self.card_coding = self._build_coding_page()
+        self.card_store = self._build_store_page()
+        for key, number, title in (("car", 1, "Collegamento"), ("ssh", 2, "Accesso SSH"),
+                                   ("coding", 3, "Codifica"), ("store", 4, "App Store")):
+            item = NavItem(nav, number, title, lambda k=key: self.show_page(k))
+            item.pack(padx=10, pady=(12 if number == 1 else 0, 4), anchor="w")
+            self.nav_items[key] = item
+        self.card_car.chip = self.chip_car
+        self.card_ssh.chip = self.chip_ssh
+        self.card_coding.chip = self.chip_coding
+        self.card_store.chip = self.chip_store
+        self.show_page("car")
 
         self._build_log()
 
+    def show_page(self, key):
+        self.current_page = key
+        self.pages[key].tkraise()
+        for name, item in self.nav_items.items():
+            item.selected = name == key
+
     def _build_header(self):
-        header = tk.Frame(self.root, bg=SURFACE)
-        header.pack(fill="x")
+        header = tk.Frame(self.root, bg=PANEL, height=64)
+        header.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        header.grid_propagate(False)
         self._logo = None
         try:
             self._logo = tk.PhotoImage(file=os.path.join(RESOURCES, "mgu_plus_header.png"))
         except tk.TclError:
             pass
+        left = 14
         if self._logo is not None:
-            tk.Label(header, image=self._logo, bg=SURFACE).pack(side="left", padx=(16, 12), pady=6)
-        titles = tk.Frame(header, bg=SURFACE)
-        titles.pack(side="left", pady=6, padx=(0 if self._logo else 16, 0))
-        top = tk.Frame(titles, bg=SURFACE)
-        top.pack(anchor="w")
-        tk.Label(top, text="MGU PLUS", bg=SURFACE, fg=TEXT, font=(FONT, 17, "bold")).pack(side="left")
-        tk.Label(top, text="v" + APP_VERSION, bg=SURFACE, fg=MUTED,
-                 font=(FONT, 9)).pack(side="left", padx=(8, 0), pady=(7, 0))
-        tk.Label(top, text="by DeathWalkeR", bg=SURFACE, fg=BRAND,
-                 font=(FONT, 9, "bold italic")).pack(side="left", padx=(10, 0), pady=(7, 0))
-        tk.Label(titles, text="Root SSH e App Store per BMW iDrive 7  ·  iDrive 8 sperimentale", bg=SURFACE, fg=MUTED,
-                 font=(FONT, 9)).pack(anchor="w")
+            tk.Label(header, image=self._logo, bg=PANEL, borderwidth=0).place(x=14, y=9)
+            left = 68
+        title = tk.Label(header, text=APP_NAME, bg=PANEL, fg=TEXT, font=HEADING, borderwidth=0)
+        title.place(x=left, y=6)
+        version = tk.Label(header, text="%s  by %s" % (APP_VERSION, AUTHOR), bg=PANEL, fg=DIM, font=SMALL,
+                           borderwidth=0)
+        version.place(x=left + 2, y=37)
+        widest = max(tkfont.Font(font=HEADING).measure(APP_NAME), tkfont.Font(font=SMALL).measure(
+            "%s  by %s" % (APP_VERSION, AUTHOR)))
+        tk.Label(header, text="BMW MGU iDrive 7 (iDrive 8 sperimentale) - root SSH e App Store via cavo ENET",
+                 bg=PANEL, fg=DIM, font=SMALL, borderwidth=0).place(x=left + widest + 34, y=23)
+        self.btn_update = RoundButton(header, "Aggiornamenti", self.do_program_update, min_width=130, height=34)
+        self.btn_update.place(relx=1.0, x=-18, y=15, anchor="ne")
 
-        self.btn_update = ttk.Button(header, text="Aggiornamenti MGU Plus", style="Small.TButton",
-                                     command=self.do_program_update)
-        self.btn_update.pack(side="right", padx=(10, 16))
-        self.link = tk.Label(header, text="", bg=SURFACE2, fg=MUTED, font=(FONT, 9, "bold"), padx=12, pady=5)
-        self.link.pack(side="right")
+    def _build_chips(self):
+        bar = tk.Frame(self.root, bg=BACK)
+        bar.grid(row=2, column=0, columnspan=2, sticky="nsew")
+        self.chip_car = Chip(bar)
+        self.chip_ssh = Chip(bar)
+        self.chip_coding = Chip(bar)
+        self.chip_store = Chip(bar)
+        self.chip_busy = Chip(bar, colour=ACCENT)
+        for chip in (self.chip_car, self.chip_ssh, self.chip_coding, self.chip_store):
+            chip.pack(side="left", padx=(16 if chip is self.chip_car else 0, 8), pady=(10, 0), anchor="n")
 
-        stripes = tk.Frame(self.root, bg=BG, height=3)
-        stripes.pack(fill="x")
-        for colour in M_STRIPES:
-            tk.Frame(stripes, bg=colour, height=3).pack(side="left", fill="x", expand=True)
-
-    def _card(self, parent, number, title):
-        """Un riquadro: intestazione (numero, titolo, stato), corpo e una barra
-        delle azioni in basso, sempre con l'azione principale per prima a sinistra."""
-        card = tk.Frame(parent, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
-        head = tk.Frame(card, bg=SURFACE)
-        head.pack(fill="x", padx=14, pady=(8, 5))
-        badge = tk.Canvas(head, width=24, height=24, bg=SURFACE, highlightthickness=0)
-        badge.pack(side="left")
-        badge.create_oval(1, 1, 23, 23, fill=ACCENT, outline=ACCENT)
-        badge.create_text(12, 12, text=str(number), fill="#ffffff", font=(FONT, 9, "bold"))
-        tk.Label(head, text=title, bg=SURFACE, fg=TEXT, font=(FONT, 11, "bold")).pack(side="left", padx=(9, 0))
-        chip = tk.Label(head, text="", bg=SURFACE2, fg=MUTED, font=(FONT, 8, "bold"), padx=10, pady=3)
-        chip.pack(side="right")
-        tk.Frame(card, bg=BORDER, height=1).pack(fill="x")
-        actions = tk.Frame(card, bg=SURFACE)
-        actions.pack(side="bottom", fill="x", padx=14, pady=(4, 10))
-        body = tk.Frame(card, bg=SURFACE)
-        body.pack(fill="both", expand=True, padx=14, pady=(6, 2))
-        card.chip, card.body, card.actions = chip, body, actions
-        return card
+    def _page(self, key, title, description, actions):
+        """Una pagina, sempre uguale: titolo, descrizione, contenuto nel
+        riquadro, pulsanti in basso a sinistra (il principale per primo)."""
+        page = tk.Frame(self.host, bg=BACK)
+        page.grid(row=0, column=0, sticky="nsew")
+        tk.Label(page, text=title, bg=BACK, fg=TEXT, font=HEADING, anchor="w").pack(fill="x", pady=(0, 2))
+        tk.Label(page, text=description, bg=BACK, fg=DIM, font=BODY, anchor="w", justify="left",
+                 wraplength=920).pack(fill="x", pady=(0, 10))
+        bar = tk.Frame(page, bg=BACK, height=56)
+        bar.pack(side="bottom", fill="x")
+        bar.pack_propagate(False)
+        card = Card(page)
+        card.pack(fill="both", expand=True)
+        buttons = []
+        for name, text, command, kind in actions:
+            button = RoundButton(bar, text, command, kind=kind)
+            button.pack(side="left", padx=(0, 10), pady=(12, 0), anchor="n")
+            setattr(self, name, button)
+            buttons.append(button)
+        page.body = card.body
+        page.buttons = buttons
+        self.pages[key] = page
+        return page
 
     @staticmethod
-    def _set_chip(card, text, colour):
-        card.chip.configure(text=text, fg=colour)
-
-    def _pair(self, parent, row, column, label, widget):
-        tk.Label(parent, text=label, bg=SURFACE, fg=MUTED, font=(FONT, 9),
-                 anchor="w").grid(row=row, column=column, sticky="w", pady=3, padx=(0 if column == 0 else 18, 10))
-        widget.grid(row=row, column=column + 1, sticky="w", pady=3)
+    def _form_label(parent, text, row):
+        tk.Label(parent, text=text, bg=PANEL, fg=DIM, font=BOLD, anchor="w").grid(
+            row=row, column=0, sticky="w", padx=(0, 18), pady=(0, 8))
 
     def _value(self, parent):
-        return tk.Label(parent, text="—", bg=SURFACE, fg=TEXT, font=(MONO, 9), anchor="w", width=24)
+        return tk.Label(parent, text="—", bg=PANEL, fg=TEXT, font=MONO, anchor="w")
 
-    def _build_car_card(self, parent):
-        card = self._card(parent, 1, "Connessione vettura")
-        grid = tk.Frame(card.body, bg=SURFACE)
-        grid.pack(fill="x")
-        self._pair(grid, 0, 0, "Gateway", ttk.Entry(grid, textvariable=self.gateway, width=18, font=(MONO, 10)))
-        self._pair(grid, 0, 2, "VIN", ttk.Entry(grid, textvariable=self.vin, width=20, font=(MONO, 10)))
-        self._pair(grid, 1, 0, "IP MGU", ttk.Entry(grid, textvariable=self.mgu_ip, width=18, font=(MONO, 10)))
-        self.variant_box = ttk.Combobox(grid, textvariable=self.variant_label, state="readonly", width=19,
-                                        values=[label for _, label in VARIANT_CHOICES])
+    def _build_car_page(self):
+        page = self._page("car", "Collegamento",
+                          "Cavo ENET nella presa OBD, quadro in modalità diagnosi (3 pressioni rapide di Start/Stop). "
+                          "Con l'hotspot Wi-Fi dell'auto solo le operazioni su SSH già attivo.",
+                          (("btn_check", "Connetti vettura", self.do_check, "primary"),
+                           ("detect_btn", "Leggi solo VIN", self.detect_vin, "secondary")))
+        form = tk.Frame(page.body, bg=PANEL)
+        form.pack(anchor="nw")
+        self._form_label(form, "Gateway", 0)
+        entry(form, self.gateway).grid(row=0, column=1, sticky="w", pady=(0, 8))
+        self._form_label(form, "VIN", 1)
+        entry(form, self.vin).grid(row=1, column=1, sticky="w", pady=(0, 8))
+        self._form_label(form, "IP MGU", 2)
+        entry(form, self.mgu_ip).grid(row=2, column=1, sticky="w", pady=(0, 8))
+        self._form_label(form, "Tipo MGU", 3)
+        self.variant_box = ttk.Combobox(form, textvariable=self.variant_label, state="readonly", width=30,
+                                        values=[label for _, label in VARIANT_CHOICES], font=BODY)
         self.variant_box.bind("<<ComboboxSelected>>", lambda _e: self._on_variant(self.variant_label.get()))
-        self._pair(grid, 1, 2, "Tipo MGU", self.variant_box)
-        self.car_serial = self._value(grid)
-        self._pair(grid, 2, 0, "Seriale MGU", self.car_serial)
-        self.car_hardware = self._value(grid)
-        self._pair(grid, 2, 2, "Hardware MGU", self.car_hardware)
-        tk.Label(card.body, text="Cavo ENET nella presa OBD, quadro in modalità diagnosi (3 pressioni rapide di "
-                 "Start/Stop). Con l'hotspot Wi-Fi dell'auto solo le operazioni su SSH già attivo.",
-                 bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w", justify="left",
-                 wraplength=580).pack(fill="x", pady=(4, 0))
+        self.variant_box.grid(row=3, column=1, sticky="w", pady=(0, 8))
+        self._form_label(form, "Seriale MGU", 4)
+        self.car_serial = self._value(form)
+        self.car_serial.grid(row=4, column=1, sticky="w", pady=(0, 8))
+        self._form_label(form, "Hardware MGU", 5)
+        self.car_hardware = self._value(form)
+        self.car_hardware.grid(row=5, column=1, sticky="w", pady=(0, 8))
+        return page
 
-        self.btn_check = ttk.Button(card.actions, text="Connetti vettura", style="Primary.TButton",
-                                    command=self.do_check)
-        self.btn_check.pack(side="left")
-        self.detect_btn = ttk.Button(card.actions, text="Leggi solo VIN", style="Secondary.TButton",
-                                     command=self.detect_vin)
-        self.detect_btn.pack(side="left", padx=(6, 0))
-        return card
-
-    def _build_ssh_card(self, parent):
-        card = self._card(parent, 2, "Accesso SSH MGU")
-        opts = tk.Frame(card.body, bg=SURFACE)
-        opts.pack(fill="x")
-        ttk.Checkbutton(opts, text="SSH persistente con modalità debug spenta (consigliato)",
-                        variable=self.disable_debug, style="Dark.TCheckbutton").pack(side="left")
-        ttk.Checkbutton(opts, text="Chiave unica per l'auto (avanzato)", variable=self.unique_key,
-                        style="Dark.TCheckbutton").pack(side="left", padx=(16, 0))
-        coding = tk.Frame(card.body, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
-        coding.pack(fill="x", pady=(6, 0))
-        tk.Label(coding, text="Codifica", bg=SURFACE, fg=TEXT, font=(FONT, 9, "bold"),
-                 padx=10).pack(side="left")
-        self.coding_info = tk.Label(coding, text="", bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w")
-        self.coding_info.pack(side="left", fill="x", expand=True)
-        self.btn_restore = ttk.Button(coding, text="Ripristina (sperimentale)", style="Small.TButton",
-                                      command=self.do_restore)
-        self.btn_restore.pack(side="right", padx=(4, 6), pady=4)
-        self.btn_backup = ttk.Button(coding, text="Backup codifica", style="Small.TButton", command=self.do_backup)
-        self.btn_backup.pack(side="right", pady=4)
-        tk.Label(card.body, text="Il flash cancella la codifica e gli abbinamenti Digital Key: prima il backup "
+    def _build_ssh_page(self):
+        page = self._page("ssh", "Accesso SSH MGU",
+                          "Flash dell'immagine di debug e accesso root via SSH alla MGU.",
+                          (("btn_flash", "Flash + Apri SSH", self.do_flash, "primary"),
+                           ("btn_enable", "Apri SSH", self.do_enable, "secondary"),
+                           ("btn_fix", "Correggi chiave", self.do_fix_key, "secondary"),
+                           ("btn_disable", "Disattiva SSH", self.do_disable, "danger")))
+        ttk.Checkbutton(page.body, text="SSH persistente con modalità debug spenta (consigliato)",
+                        variable=self.disable_debug, style="Dark.TCheckbutton").pack(anchor="w")
+        ttk.Checkbutton(page.body, text="Chiave unica per l'auto (avanzato)", variable=self.unique_key,
+                        style="Dark.TCheckbutton").pack(anchor="w")
+        tk.Label(page.body, text="Il flash cancella la codifica e gli abbinamenti Digital Key: prima il backup "
                  "(il programma lo propone da solo), dopo il ripristino. Il ripristino è sperimentale: tieni "
-                 "a portata BimmerCode o E-Sys.", bg=SURFACE, fg="#f3c98a", font=(FONT, 8), anchor="w",
-                 justify="left", wraplength=580).pack(fill="x", pady=(4, 0))
+                 "a portata BimmerCode o E-Sys.", bg=PANEL, fg=WARN, font=BODY, anchor="w",
+                 justify="left", wraplength=880).pack(fill="x", pady=(12, 0))
+        return page
 
-        self.btn_flash = ttk.Button(card.actions, text="Flash + Apri SSH", style="Primary.TButton",
-                                    command=self.do_flash)
-        self.btn_flash.pack(side="left")
-        self.btn_enable = ttk.Button(card.actions, text="Apri SSH", style="Secondary.TButton",
-                                     command=self.do_enable)
-        self.btn_enable.pack(side="left", padx=(6, 0))
-        self.btn_fix = ttk.Button(card.actions, text="Correggi chiave", style="Secondary.TButton",
-                                  command=self.do_fix_key)
-        self.btn_fix.pack(side="left", padx=(6, 0))
-        self.btn_disable = ttk.Button(card.actions, text="Disattiva SSH", style="Danger.TButton",
-                                      command=self.do_disable)
-        self.btn_disable.pack(side="left", padx=(6, 0))
-        return card
+    def _build_coding_page(self):
+        page = self._page("coding", "Codifica",
+                          "Backup della codifica della MGU prima del flash e ripristino dopo.",
+                          (("btn_backup", "Backup codifica", self.do_backup, "primary"),
+                           ("btn_restore", "Ripristina (sperimentale)", self.do_restore, "secondary")))
+        form = tk.Frame(page.body, bg=PANEL)
+        form.pack(anchor="nw", fill="x")
+        self._form_label(form, "Backup", 0)
+        self.coding_info = tk.Label(form, text="", bg=PANEL, fg=DIM, font=BODY, anchor="w")
+        self.coding_info.grid(row=0, column=1, sticky="w", pady=(0, 8))
+        tk.Label(page.body, text="Il ripristino è sperimentale: tieni a portata BimmerCode o E-Sys.",
+                 bg=PANEL, fg=WARN, font=BODY, anchor="w", justify="left",
+                 wraplength=880).pack(fill="x", pady=(12, 0))
+        return page
 
-    def _build_store_card(self, parent):
-        card = self._card(parent, 3, "Applicazioni MGU (App Store)")
-        top = tk.Frame(card.body, bg=SURFACE2)
-        top.pack(fill="x")
-        self.btn_github = ttk.Button(top, text="Controlla aggiornamenti GitHub", style="Small.TButton",
-                                     command=self.do_store_latest)
-        self.btn_github.pack(side="right", padx=6, pady=4)
-        self.store_line = tk.Label(top, text="", bg=SURFACE2, fg=TEXT, font=(FONT, 9, "bold"),
-                                   anchor="w", justify="left", padx=10, pady=7, wraplength=330)
-        self.store_line.pack(side="left", fill="x", expand=True)
-
-        table = tk.Frame(card.body, bg=SURFACE2, highlightthickness=1, highlightbackground=BORDER)
-        table.pack(fill="both", expand=True, pady=(8, 0))
+    def _build_store_page(self):
+        page = self._page("store", "Applicazioni MGU (App Store)",
+                          "Con internet in auto lo Store si aggiorna anche da solo, dalla sua pagina Installed.",
+                          (("btn_store", "Installa / Aggiorna", self.do_store, "primary"),
+                           ("btn_versions", "Verifica app installate", self.do_check, "secondary"),
+                           ("btn_github", "Controlla aggiornamenti GitHub", self.do_store_latest, "secondary"),
+                           ("btn_restart", "Riavvia MGU", self.do_restart, "secondary"),
+                           ("btn_remove", "Rimuovi Store", self.do_remove, "danger")))
+        self.store_line = tk.Label(page.body, text="", bg=PANEL, fg=TEXT, font=BOLD, anchor="w", justify="left",
+                                   wraplength=880)
+        self.store_line.pack(fill="x", pady=(0, 8))
+        table = Field(page.body, padding=(0, 0))
+        table.pack(fill="both", expand=True)
         self.tree = ttk.Treeview(table, columns=("name", "installed", "latest", "state"), show="headings",
                                  style="Dark.Treeview", selectmode="none", height=6)
-        for column, title, width, anchor, stretch in (("name", "Componente", 190, "w", True),
-                                                      ("installed", "Installata", 82, "center", False),
-                                                      ("latest", "Ultima", 82, "center", False),
-                                                      ("state", "Stato", 170, "w", True)):
-            self.tree.heading(column, text=title)
+        for column, title, width, anchor, stretch in (("name", "Componente", 260, "w", True),
+                                                      ("installed", "Installata", 110, "w", False),
+                                                      ("latest", "Ultima", 110, "w", False),
+                                                      ("state", "Stato", 240, "w", True)):
+            self.tree.heading(column, text=title, anchor="w")
             self.tree.column(column, width=width, minwidth=60, anchor=anchor, stretch=stretch)
         tree_scroll = ttk.Scrollbar(table, orient="vertical", command=self.tree.yview,
                                     style="Dark.Vertical.TScrollbar")
@@ -472,48 +448,36 @@ class App:
         self.tree.pack(side="left", fill="both", expand=True)
         for state, (_, colour) in ROW_TEXT.items():
             self.tree.tag_configure(state, foreground=colour)
-        tk.Label(card.body, text="Con internet in auto lo Store si aggiorna anche da solo, dalla sua pagina "
-                 "Installed.", bg=SURFACE, fg=MUTED, font=(FONT, 8), anchor="w").pack(fill="x", pady=(6, 0))
-
-        self.btn_store = ttk.Button(card.actions, text="Installa / Aggiorna", style="Primary.TButton",
-                                    command=self.do_store)
-        self.btn_store.pack(side="left")
-        self.btn_versions = ttk.Button(card.actions, text="Verifica app installate", style="Secondary.TButton",
-                                       command=self.do_check)
-        self.btn_versions.pack(side="left", padx=(6, 0))
-        self.btn_restart = ttk.Button(card.actions, text="Riavvia MGU", style="Secondary.TButton",
-                                      command=self.do_restart)
-        self.btn_restart.pack(side="left", padx=(6, 0))
-        self.btn_remove = ttk.Button(card.actions, text="Rimuovi Store", style="Danger.TButton",
-                                     command=self.do_remove)
-        self.btn_remove.pack(side="left", padx=(6, 0))
-        return card
+        return page
 
     def _build_log(self):
-        card = tk.Frame(self.root, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
-        card.pack(fill="both", expand=True, padx=14, pady=(0, 14))
-        head = tk.Frame(card, bg=SURFACE)
-        head.pack(fill="x", padx=14, pady=(8, 6))
-        tk.Label(head, text="Registro attività", bg=SURFACE, fg=TEXT, font=(FONT, 10, "bold")).pack(side="left")
-        tk.Label(head, text="(completo, in inglese, in data\\logs)", bg=SURFACE, fg=MUTED,
-                 font=(FONT, 8)).pack(side="left", padx=(6, 0))
-        self.btn_clear = ttk.Button(head, text="Pulisci", style="Small.TButton", command=self.clear_log)
+        outer = tk.Frame(self.root, bg=BACK)
+        outer.grid(row=4, column=0, columnspan=2, sticky="nsew", padx=16, pady=(6, 14))
+        card = Card(outer, padding=(14, 8, 14, 12))
+        card.pack(fill="both", expand=True)
+        head = tk.Frame(card.body, bg=PANEL)
+        head.pack(fill="x", pady=(0, 6))
+        tk.Label(head, text="Log completo", bg=PANEL, fg=DIM, font=BOLD).pack(side="left")
+        self.btn_clear = RoundButton(head, "Pulisci finestra", self.clear_log)
         self.btn_clear.pack(side="right")
-        ttk.Button(head, text="Apri cartella log", style="Small.TButton",
-                   command=self.open_logs_folder).pack(side="right", padx=(0, 6))
-        box = tk.Frame(card, bg=CONSOLE_BG)
-        box.pack(fill="both", expand=True, padx=1, pady=(0, 1))
-        self.out = tk.Text(box, height=4, wrap="word", font=(MONO, 9), bg=CONSOLE_BG, fg=CONSOLE_FG,
-                           insertbackground=CONSOLE_FG, relief="flat", borderwidth=0, padx=12, pady=8,
-                           selectbackground=ACCENT_LO, highlightthickness=0)
+        RoundButton(head, "Apri cartella dei log", self.open_logs_folder).pack(side="right", padx=(0, 10))
+        box = Field(card.body, padding=(0, 0))
+        box.configure(bg=BACK)
+        box.pack(fill="both", expand=True)
+        self.out = tk.Text(box, height=4, wrap="none", font=MONO, bg=BACK, fg=TEXT,
+                           insertbackground=TEXT, relief="flat", borderwidth=0, padx=8, pady=6,
+                           selectbackground=ACCENT, selectforeground=WHITE, highlightthickness=0)
         scroll = ttk.Scrollbar(box, orient="vertical", command=self.out.yview, style="Dark.Vertical.TScrollbar")
-        self.out.configure(yscrollcommand=scroll.set)
+        hscroll = ttk.Scrollbar(box, orient="horizontal", command=self.out.xview,
+                                style="Dark.Horizontal.TScrollbar")
+        self.out.configure(yscrollcommand=scroll.set, xscrollcommand=hscroll.set)
         scroll.pack(side="right", fill="y")
+        hscroll.pack(side="bottom", fill="x")
         self.out.pack(side="left", fill="both", expand=True)
-        self.out.tag_configure("ok", foreground=OK)
-        self.out.tag_configure("bad", foreground=ERR)
+        self.out.tag_configure("ok", foreground=GOOD)
+        self.out.tag_configure("bad", foreground=BAD)
         self.out.tag_configure("warn", foreground=WARN)
-        self.out.tag_configure("cmd", foreground=ACCENT_HI)
+        self.out.tag_configure("cmd", foreground=ACCENT)
         self.out.configure(state="disabled")
 
     # --- registro ---------------------------------------------------------
@@ -606,15 +570,14 @@ class App:
         state = "disabled" if on else "normal"
         for b in self._action_buttons():
             b.configure(state=state)
+        self.busy_bar.running = on
         if on:
-            self.status.configure(text=text or "Operazione in corso: non scollegare il cavo e non spegnere l'auto…",
-                                  fg=WARN)
-            self.progress.configure(mode="indeterminate")
-            self.progress.start(12)
+            self.chip_busy.configure(text=text or "Operazione in corso: non scollegare il cavo e non spegnere l'auto…")
+            self.chip_busy.pack(side="left", padx=(0, 8), pady=(10, 0), anchor="n")
+            self.root.configure(cursor="watch")
         else:
-            self.progress.stop()
-            self.progress.configure(mode="determinate", value=0)
-            self.status.configure(text="Pronto.", fg=MUTED)
+            self.chip_busy.pack_forget()
+            self.root.configure(cursor="")
             self._refresh()
 
     def _common_args(self):
@@ -698,27 +661,25 @@ class App:
         car, root, store, catalog = s.get("car"), s.get("root"), s.get("store"), s.get("catalog")
 
         if not car:
-            self._set_chip(self.card_car, "NON COLLEGATA", MUTED)
-            self.link.configure(text="Vettura non collegata", fg=MUTED)
+            self.chip_car.configure(text="Vettura: non collegata", fg=DIM)
         elif car.get("error"):
-            self._set_chip(self.card_car, "NON TROVATA", ERR)
-            self.link.configure(text="Vettura non trovata", fg=ERR)
+            self.chip_car.configure(text="Vettura: non trovata", fg=BAD)
         else:
-            via = "HOTSPOT" if car.get("via") == "hotspot" else "ENET"
-            self._set_chip(self.card_car, "COLLEGATA · %s" % via, OK)
-            self.link.configure(text="%s · MGU %s" % (via, car.get("mgu_ip") or "?"), fg=OK)
+            via = "hotspot" if car.get("via") == "hotspot" else "ENET"
+            self.chip_car.configure(text="Vettura: collegata via %s, MGU %s" % (via, car.get("mgu_ip") or "?"),
+                                    fg=GOOD)
         self.car_serial.configure(text=(car or {}).get("serial") or "Non disponibile")
         hardware = ((car or {}).get("hardware") or "Non disponibile").split(",")[0]
         self.car_hardware.configure(text=hardware[5:] if hardware.startswith("HWEL ") else hardware)
 
         if not root:
-            self._set_chip(self.card_ssh, "DA VERIFICARE", MUTED)
+            self.chip_ssh.configure(text="SSH: da verificare", fg=DIM)
         elif root.get("active"):
-            self._set_chip(self.card_ssh, "ROOT ATTIVO", OK)
+            self.chip_ssh.configure(text="SSH: root attivo", fg=GOOD)
         elif root.get("reason") in ("login-refused", "key-unreadable"):
-            self._set_chip(self.card_ssh, "CHIAVE RIFIUTATA", ERR)
+            self.chip_ssh.configure(text="SSH: chiave rifiutata", fg=BAD)
         else:
-            self._set_chip(self.card_ssh, "NON ATTIVO", WARN)
+            self.chip_ssh.configure(text="SSH: non attivo", fg=WARN)
 
         backups = self._backups()
         if backups:
@@ -726,8 +687,11 @@ class App:
             self.coding_info.configure(text="backup del %s UTC, %d blocchi%s" % (
                 b["taken"], b["blocks"], "" if b["verified"] else " (NON verificato)"),
                 fg=TEXT if b["verified"] else WARN)
+            self.chip_coding.configure(text="Codifica: backup del %s UTC%s" % (
+                b["taken"], "" if b["verified"] else ", non verificato"), fg=GOOD if b["verified"] else WARN)
         else:
-            self.coding_info.configure(text="nessun backup per questo VIN", fg=MUTED)
+            self.coding_info.configure(text="nessun backup per questo VIN", fg=DIM)
+            self.chip_coding.configure(text="Codifica: nessun backup", fg=DIM)
         self.tree.delete(*self.tree.get_children())
         rows = (store or {}).get("rows") or (catalog or {}).get("rows") or []
         for row in rows:
@@ -742,24 +706,25 @@ class App:
         summary = (store or {}).get("summary") or {}
         pending = summary.get("updates", 0) + summary.get("missing", 0)
         if store and store.get("error"):
-            self._set_chip(self.card_store, "VERIFICA NON RIUSCITA", ERR)
-            line, colour = "Lettura delle versioni installate non riuscita: vedi il registro.", ERR
+            self.chip_store.configure(text="Store: verifica non riuscita", fg=BAD)
+            line, colour = "Lettura delle versioni installate non riuscita: vedi il registro.", BAD
         elif store and not summary.get("installed"):
-            self._set_chip(self.card_store, "NON INSTALLATO", ACCENT_HI)
+            self.chip_store.configure(text="Store: non installato", fg=ACCENT)
             line, colour = "Lo Store non è installato su questa MGU." + suffix, TEXT
         elif store and pending:
-            self._set_chip(self.card_store, "%d AGGIORNAMENT%s" % (pending, "O" if pending == 1 else "I"), WARN)
+            self.chip_store.configure(text="Store: %d aggiornament%s" % (pending, "o" if pending == 1 else "i"),
+                                      fg=WARN)
             line, colour = ("Store %s installato: %s." % (summary.get("store") or "?",
                                                           "1 aggiornamento disponibile" if pending == 1
                                                           else "%d aggiornamenti disponibili" % pending)
                             + suffix), WARN
         elif store:
-            self._set_chip(self.card_store, "AGGIORNATO", OK)
-            line, colour = "Store %s installato: è tutto aggiornato." % (summary.get("store") or "?") + suffix, OK
+            self.chip_store.configure(text="Store: aggiornato", fg=GOOD)
+            line, colour = "Store %s installato: è tutto aggiornato." % (summary.get("store") or "?") + suffix, GOOD
         else:
-            self._set_chip(self.card_store, "DA VERIFICARE", MUTED)
+            self.chip_store.configure(text="Store: da verificare", fg=DIM)
             if self._store_loading:
-                line, colour = "Lettura delle ultime versioni di mgu-store da GitHub…", MUTED
+                line, colour = "Lettura delle ultime versioni di mgu-store da GitHub…", DIM
             elif self._store_error:
                 line, colour = ("Versioni da GitHub non lette (%s). Premi “Controlla aggiornamenti GitHub” per "
                                 "riprovare." % self._store_error), WARN
@@ -767,7 +732,7 @@ class App:
                 line, colour = ("Ultimo Store pubblicato: %s. Collega la vettura per confrontarlo con la MGU."
                                 % latest + suffix), TEXT
             else:
-                line, colour = "Premi “Connetti vettura” per leggere le versioni.", MUTED
+                line, colour = "Premi “Connetti vettura” per leggere le versioni.", DIM
         self.store_line.configure(text=line, fg=colour)
 
     def _load_state(self):
