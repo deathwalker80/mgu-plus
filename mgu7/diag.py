@@ -157,6 +157,49 @@ def read_mgu_ip(client, dst=MGU):
     x.require(REQUEST_IP[0])
     return parse_mgu_ip(x.data)
 
+DME = 0x12                        # indirizzo diagnostico della centralina motore
+REQUEST_BATTERY_OBD = bytes.fromhex('01 42')   # OBD servizio 01 PID 42 = tensione di alimentazione
+
+
+def read_battery(client, dst=DME):
+    """Tensione della batteria a 12 V letta dalla centralina motore con OBD
+    servizio 01 PID 42 (formula standard (256*A+B)/1000 V). SOLO lettura.
+    Ritorna i Volt (float) oppure None se la centralina non risponde."""
+    try:
+        raw = client.request(dst, REQUEST_BATTERY_OBD, P_READ_IP)
+    except (HsfzError, UdsReject, DiagError, OSError):
+        return None
+    x = match_response(raw, dst)
+    if x is None:
+        return None
+    d = x.data
+    if len(d) < 4 or d[0] != 0x41 or d[1] != 0x42:
+        return None
+    return ((d[2] << 8) + d[3]) / 1000.0
+
+
+# Soglie (batteria a riposo ~12,6 V piena / 12,3 V a metà; >=13,2 V = c'è un
+# caricabatterie o il motore è acceso). CHARGER_V è il minimo consigliato per
+# un flash/codifica, LOW_V la soglia di allerta.
+BATTERY_CHARGER_V = 13.2
+BATTERY_FLASH_MIN_V = 13.0
+BATTERY_LOW_V = 12.4
+BATTERY_VERY_LOW_V = 12.0
+
+
+def battery_level(volts):
+    """'charger' | 'ok' | 'low' | 'verylow' | 'unknown' dalla tensione."""
+    if volts is None:
+        return 'unknown'
+    if volts >= BATTERY_CHARGER_V:
+        return 'charger'
+    if volts >= BATTERY_LOW_V:
+        return 'ok'
+    if volts >= BATTERY_VERY_LOW_V:
+        return 'low'
+    return 'verylow'
+
+
 def read_dtcs(client, dst=MGU, profile=P_ISTEP):
     raw = client.request(dst, REQUEST_DTC, profile)
     x = match_response(raw, dst)

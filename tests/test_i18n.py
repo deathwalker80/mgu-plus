@@ -514,5 +514,59 @@ class DiagnoseTests(unittest.TestCase):
             self.assertIn(part, text)
 
 
+class BatteryTests(unittest.TestCase):
+    def test_read_battery_parses_obd_voltage(self):
+        from mgu7 import diag, hsfz
+
+        class FakeClient:
+            def request(self, dst, payload, profile):
+                # OBD 01 42 -> 41 42 A B, (256*A+B)/1000 = 12.345 V
+                return [hsfz.T(hsfz.TYPE_DIAG, dst, hsfz.TESTER, bytes([0x41, 0x42, 0x30, 0x39]))]
+        self.assertAlmostEqual(diag.read_battery(FakeClient(), dst=0x12), 12.345, places=3)
+
+    def test_read_battery_none_when_no_answer(self):
+        from mgu7 import diag
+
+        class Dead:
+            def request(self, dst, payload, profile):
+                return []
+        self.assertIsNone(diag.read_battery(Dead(), dst=0x12))
+
+    def test_battery_levels(self):
+        from mgu7 import diag
+        self.assertEqual(diag.battery_level(None), 'unknown')
+        self.assertEqual(diag.battery_level(13.6), 'charger')
+        self.assertEqual(diag.battery_level(12.6), 'ok')
+        self.assertEqual(diag.battery_level(12.1), 'low')
+        self.assertEqual(diag.battery_level(11.8), 'verylow')
+
+
+class BatteryGuiTests(unittest.TestCase):
+    def setUp(self):
+        self.root = gui.tk.Tk(); self.root.withdraw()
+        self.app = gui.App(self.root, auto_check=False)
+
+    def tearDown(self):
+        self.root.destroy()
+
+    def test_chip_shows_voltage(self):
+        self.app._set_battery_chip(12.4)
+        self.assertIn('12.4 V', self.app.chip_batt.cget('text'))
+        self.app._set_battery_chip(None)
+        self.assertIn('non letta', self.app.chip_batt.cget('text'))
+
+    def test_proceed_true_when_voltage_ok_or_unknown(self):
+        self.app.state = {'car': {'battery': 13.4}}
+        self.assertTrue(self.app._battery_ok_to_proceed('x', 'x'))
+        self.app.state = {'car': {'battery': None}}
+        self.assertTrue(self.app._battery_ok_to_proceed('x', 'x'))
+
+    def test_warns_when_low(self):
+        self.app.state = {'car': {'battery': 11.9}}
+        with patch.object(gui.messagebox, 'askyesno', return_value=False) as m:
+            self.assertFalse(self.app._battery_ok_to_proceed('il flash', 'the flash'))
+            self.assertTrue(m.called)
+
+
 if __name__ == '__main__':
     unittest.main()

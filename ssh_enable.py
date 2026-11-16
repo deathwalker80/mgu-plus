@@ -186,6 +186,21 @@ class Tool:
         log('Status: debug/SSH-open state is', 'ON' if state.get('dtc_debug') else 'OFF (or not reported)' if state.get('dtcs') is None else 'OFF')
         return state
 
+    def _log_battery(self):
+        """Legge e scrive nel log la tensione batteria (sola lettura, non ferma nulla)."""
+        if self.client is None:
+            return
+        try:
+            volts = diag.read_battery(self.client)
+        except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError, OSError):
+            return
+        if volts is None:
+            log('Battery voltage: not readable now.')
+        elif volts < diag.BATTERY_FLASH_MIN_V:
+            log('WARNING: battery voltage %.1f V (below %.1f V): connect a charger.' % (volts, diag.BATTERY_FLASH_MIN_V))
+        else:
+            log('Battery voltage: %.1f V.' % volts)
+
     def preflight(self):
         self.connect()
         out_root = os.path.join(HERE, 'data', 'preflight')
@@ -443,6 +458,7 @@ class Tool:
         (mgu7/coding.py). Exit 0 fatto, 12 blocchi scritti ma CAFD ancora da
         impostare (E-Sys), 1 fermato."""
         self.connect()
+        self._log_battery()
         vin = self.vin or preflight.read_vin(self.client)
         folder = getattr(self.args, 'backup', None)
         if not folder:
@@ -523,7 +539,7 @@ class Tool:
             store_mod.write_state(state)
             return EXIT_ERROR
         car = {'via': via, 'vin': self.vin, 'gateway': self.args.gateway if via == 'enet' else None,
-               'mgu_ip': self.mgu_ip, 'svk': None, 'hardware': None, 'serial': None}
+               'mgu_ip': self.mgu_ip, 'svk': None, 'hardware': None, 'serial': None, 'battery': None}
         if self.svk is not None:
             car['svk'] = self.svk.summary()
             car['hardware'] = ', '.join(str(r) for r in self.svk.all_named('HWEL')) or None
@@ -540,6 +556,16 @@ class Tool:
                 log('MGU serial number not read: %s' % e)
         if car['hardware'] or car['serial']:
             log('MGU hardware: %s | serial: %s' % (car['hardware'] or '?', car['serial'] or '?'))
+        if self.client is not None and via == 'enet':
+            try:
+                volts = diag.read_battery(self.client)
+                car['battery'] = volts
+                if volts is not None:
+                    log('Battery voltage: %.1f V (%s)' % (volts, diag.battery_level(volts)))
+                else:
+                    log('Battery voltage: not readable (engine ECU did not answer OBD 01 42).')
+            except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError, OSError) as e:
+                log('Battery voltage not read: %s' % e)
         state['car'] = car
         root = {'active': False, 'reason': None}
         identity = None
@@ -792,6 +818,7 @@ class Tool:
         self.vin = vin
         arch = args.arch
         self.connect()
+        self._log_battery()
         if self.mgu_ip:
             self.probe(self.mgu_ip)
         log('Flash mode: writing the %s debug image.' % ('MGU ID7 (BDC2/BDC3)' if arch == ID7 else arch))

@@ -49,7 +49,7 @@ def collect(gateway="auto", mgu_ip=None, log=print):
     riesce a collegarsi al gateway/alla MGU."""
     out = {"strumento": "MGU Plus - diagnostica", "quando": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S") + " UTC",
            "gateway": None, "vin": None, "mgu_ip": None, "svk": [], "svk_riassunto": None,
-           "cafd": [], "hardware": None, "seriale": None, "ident": {}, "dtc": [], "variante": None}
+           "cafd": [], "hardware": None, "seriale": None, "ident": {}, "dtc": [], "variante": None, "batteria": None}
 
     gw = gateway
     found_vin = None
@@ -80,6 +80,13 @@ def collect(gateway="auto", mgu_ip=None, log=print):
             log("  Variante: %s" % out["variante"]["it"])
         except Exception as e:
             log("  (riconoscimento variante saltato: %s)" % e)
+
+        try:
+            volts = diag.read_battery(client)
+            out["batteria"] = volts
+            log("  Batteria: %s" % ("%.1f V" % volts if volts is not None else "non leggibile"))
+        except (hsfz.HsfzError, hsfz.UdsReject, diag.DiagError, OSError) as e:
+            log("  (batteria non letta: %s)" % e)
 
         vin = _text(_read_did(client, 0xF190))
         out["vin"] = vin or found_vin
@@ -126,6 +133,7 @@ def _report_text(d):
         "IP MGU:   %s" % (", ".join(d["mgu_ip"]) if d.get("mgu_ip") else "?"),
         "Seriale:  %s" % (d.get("seriale") or "?"),
         "Hardware: %s" % (d.get("hardware") or "?"),
+        "Batteria: %s" % (("%.1f V" % d["batteria"]) if d.get("batteria") is not None else "non leggibile"),
         "",
         "VARIANTE RICONOSCIUTA",
         "  %s" % (v.get("it") or "non disponibile"),

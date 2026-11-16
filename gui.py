@@ -58,6 +58,7 @@ if sys.stderr is None:
 import ssh_enable
 from i18n import Translator
 from mgu7 import discovery
+from mgu7 import diag
 from mgu7 import store as store_mod
 from mgu7 import coding as coding_mod
 from mgu7.flash import ID7, ID8_BDC3, ID8_BCP
@@ -65,7 +66,7 @@ from widgets import (ACCENT, BACK, BAD, BODY, BOLD, BORDER, DIM, FIELD, GOOD, HE
                      WARN, WHITE, BusyBar, Card, Chip, Field, NavItem, RoundButton, entry)
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.8"
+APP_VERSION = "1.4.0"
 AUTHOR = "DeathWalkeR"
 WINDOW_TITLE = "%s %s by %s" % (APP_NAME, APP_VERSION, AUTHOR)
 # Lingua dell'interfaccia (italiano o inglese, pulsante nell'intestazione
@@ -224,9 +225,12 @@ class App:
 
         self._style()
         self.current_page = "car"
+        self._stop_batt = False
+        self._batt_thread = None
         self._build()
         self._refresh()
         _dark_title_bar(root)
+        self._start_battery_monitor()
         if auto_check:
             # All'avvio, senza aspettare la vettura: le ultime versioni di
             # mgu-store da GitHub riempiono subito la tabella.
@@ -406,8 +410,9 @@ class App:
         self.chip_ssh = Chip(bar)
         self.chip_coding = Chip(bar)
         self.chip_store = Chip(bar)
+        self.chip_batt = Chip(bar)
         self.chip_busy = Chip(bar, colour=ACCENT)
-        for chip in (self.chip_car, self.chip_ssh, self.chip_coding, self.chip_store):
+        for chip in (self.chip_car, self.chip_ssh, self.chip_coding, self.chip_store, self.chip_batt):
             chip.pack(side="left", padx=(16 if chip is self.chip_car else 0, 8), pady=(10, 0), anchor="n")
 
     def _page(self, key, title, description, actions):
@@ -643,7 +648,77 @@ class App:
             pass
         self._drain_id = self.root.after(100, self._drain)
 
+    def _set_battery_chip(self, volts):
+        level = diag.battery_level(volts)
+        colour = {"charger": GOOD, "ok": GOOD, "low": WARN, "verylow": BAD, "unknown": DIM}[level]
+        if volts is None:
+            text = T("Batteria: non letta", "Battery: not read")
+        else:
+            tail = {"charger": T(" (caricabatterie)", " (charger)"), "verylow": T(" (molto bassa)", " (very low)"),
+                    "low": T(" (bassa)", " (low)")}.get(level, "")
+            text = (T("Batteria: %.1f V", "Battery: %.1f V") % volts) + tail
+        self.chip_batt.configure(text=text, fg=colour)
+
+    def _battery_ok_to_proceed(self, what_it, what_en):
+        """Avviso tensione bassa prima di un'operazione: avvisa ma lascia
+        procedere (scelta dell'utente). True = vai, False = annulla."""
+        volts = ((self.state or {}).get("car") or {}).get("battery")
+        if volts is None or volts >= diag.BATTERY_FLASH_MIN_V:
+            return True
+        return messagebox.askyesno(
+            T("Tensione batteria bassa", "Low battery voltage"),
+            T("La batteria è a %.1f V, sotto i %.1f V consigliati.\n\n"
+              "Fare %s con la tensione bassa è rischioso: collega un caricabatterie prima.\n\n"
+              "Procedere comunque?",
+              "The battery is at %.1f V, below the recommended %.1f V.\n\n"
+              "Doing %s with low voltage is risky: connect a charger first.\n\n"
+              "Proceed anyway?") % (volts, diag.BATTERY_FLASH_MIN_V, what_it if _language[0] != "en" else what_en),
+            icon="warning")
+
+    def _start_battery_monitor(self):
+        self._batt_thread = threading.Thread(target=self._battery_loop, daemon=True)
+        self._batt_thread.start()
+
+    def _battery_loop(self):
+        """A riposo e collegati, legge la tensione ogni ~10 s su una connessione
+        breve e aggiorna la pastiglia. NON gira durante un'operazione (niente
+        seconda connessione mentre si flasha: sarebbe rischioso)."""
+        from mgu7 import hsfz
+        while not self._stop_batt:
+            if self.state is not None and not self._is_busy:
+                gw = self.gateway.get().strip()
+                try:
+                    if not gw or gw == "hotspot":
+                        gws = discovery.discover()
+                        gw = gws[0].ip if gws else None
+                    if gw and gw != "hotspot":
+                        client = hsfz.EnetClient(gw)
+                        client.connect()
+                        try:
+                            volts = diag.read_battery(client)
+                        finally:
+                            client.close()
+                        self._later(lambda v=volts: self._battery_tick(v))
+                except Exception:  # noqa: BLE001  monitor best-effort, mai disturbare
+                    pass
+            for _ in range(100):
+                if self._stop_batt:
+                    return
+                time.sleep(0.1)
+
+    def _battery_tick(self, volts):
+        if volts is None:
+            return
+        car = dict(((self.state or {}).get("car")) or {})
+        if self.state is None:
+            return
+        car["battery"] = volts
+        self.state["car"] = car
+        self._set_battery_chip(volts)
+
     def _on_destroy(self, event):
+        if event.widget is self.root:
+            self._stop_batt = True
         if event.widget is self.root and self._drain_id is not None:
             try:
                 self.root.after_cancel(self._drain_id)
@@ -764,6 +839,7 @@ class App:
         """Riempie le pagine, la tabella e le pastiglie dallo stato dell'ultimo controllo."""
         s = self.state or {}
         car, root, store, catalog = s.get("car"), s.get("root"), s.get("store"), s.get("catalog")
+        self._set_battery_chip((car or {}).get("battery"))
 
         if not car:
             self.chip_car.configure(text=T("Vettura: non collegata", "Car: not connected"), fg=DIM)
@@ -912,6 +988,8 @@ class App:
     def do_flash(self):
         if not self._require_variant() or not self._require_vin():
             return
+        if not self._battery_ok_to_proceed("il flash", "the flash"):
+            return
         if not messagebox.askyesno(
                 T("Prima predisposizione MGU", "First MGU setup"),
                 T("La head unit entra in modalità di programmazione e si riavvia.\n\n"
@@ -1016,6 +1094,8 @@ class App:
     def do_restore(self):
         if not self._require_vin():
             return
+        if not self._battery_ok_to_proceed("il ripristino", "the restore"):
+            return
         if not self._has_verified_backup():
             messagebox.showerror(T("Ripristino codifica", "Coding restore"),
                                  T("Non c'è un backup verificato della codifica per il VIN %s.\n\n"
@@ -1096,6 +1176,8 @@ class App:
         self._run(["disable"] + self._common_args(), "disable", on_done=lambda rc: self.do_check())
 
     def do_store(self):
+        if not self._battery_ok_to_proceed("l'installazione", "the install"):
+            return
         if not messagebox.askyesno(
                 T("Installare / aggiornare lo Store?", "Install / update the Store?"),
                 T("Installa mgu-store sulla head unit tramite root SSH, o lo aggiorna all'ultima versione.\n\n"
