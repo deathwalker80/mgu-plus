@@ -65,7 +65,7 @@ from widgets import (ACCENT, BACK, BAD, BODY, BOLD, BORDER, DIM, FIELD, GOOD, HE
                      WARN, WHITE, BusyBar, Card, Chip, Field, NavItem, RoundButton, entry)
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.7"
+APP_VERSION = "1.3.8"
 AUTHOR = "DeathWalkeR"
 WINDOW_TITLE = "%s %s by %s" % (APP_NAME, APP_VERSION, AUTHOR)
 # Lingua dell'interfaccia (italiano o inglese, pulsante nell'intestazione

@@ -1,9 +1,12 @@
 <!-- prerelease -->
-## MGU Plus 1.3.7 (beta, da provare in auto)
+## MGU Plus 1.3.8 (beta, da provare in auto)
 
 Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. In italiano o in inglese, con la stessa grafica di NBT Companion.
 
-**Da scaricare:** `MGU-Plus-windows-1.3.7.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+**Da scaricare:** `MGU-Plus-windows-1.3.8.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+
+### Novità della 1.3.8
+- Un unico strumento `Diagnostica-e-Cattura-ESys.bat` nello zip: legge la vettura (sola lettura, come prima) e, se stai per ricodificare con E-Sys, registra il traffico ENET con pktmon (già in Windows 10/11, niente da installare) così si ricava la sequenza esatta della codifica. Report e registrazione finiscono nella stessa cartella data\diagnostica.
 
 ### Novità della 1.3.7
 - Riconoscimento automatico della variante: a "Connetti vettura" la MGU ID7 viene impostata da sola dai dati (bootloader 00003F36, software 030); la ID8 viene segnalata ma BDC3/BCP lo confermi tu, perché sul flash la variante sbagliata è pericolosa.
