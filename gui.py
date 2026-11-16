@@ -65,7 +65,7 @@ from widgets import (ACCENT, BACK, BAD, BODY, BOLD, BORDER, DIM, FIELD, GOOD, HE
                      WARN, WHITE, BusyBar, Card, Chip, Field, NavItem, RoundButton, entry)
 
 APP_NAME = "MGU Plus"
-APP_VERSION = "1.3.6"
+APP_VERSION = "1.3.7"
 AUTHOR = "DeathWalkeR"
 WINDOW_TITLE = "%s %s by %s" % (APP_NAME, APP_VERSION, AUTHOR)
 # Lingua dell'interfaccia (italiano o inglese, pulsante nell'intestazione
@@ -449,7 +449,9 @@ class App:
                             "ENET cable in the OBD port, dashboard in diagnostic mode (press Start/Stop 3 times "
                             "quickly). Over the car's Wi-Fi hotspot only the operations on an already active SSH."),
                           (("btn_check", T("Connetti vettura", "Connect car"), self.do_check, "primary"),
-                           ("detect_btn", T("Leggi solo VIN", "Read VIN only"), self.detect_vin, "secondary")))
+                           ("detect_btn", T("Leggi solo VIN", "Read VIN only"), self.detect_vin, "secondary"),
+                           ("btn_diag", T("Diagnostica completa", "Full diagnostics"), self.do_diagnose,
+                            "secondary")))
         form = tk.Frame(page.body, bg=PANEL)
         form.pack(anchor="nw")
         self._form_label(form, "Gateway", 0)
@@ -659,7 +661,7 @@ class App:
     def _action_buttons(self):
         return [self.btn_check, self.detect_btn, self.btn_flash, self.btn_enable, self.btn_fix,
                 self.btn_backup, self.btn_restore, self.btn_disable, self.btn_store, self.btn_versions, self.btn_restart,
-                self.btn_remove, self.btn_github, self.btn_update, self.btn_language]
+                self.btn_remove, self.btn_github, self.btn_update, self.btn_language, self.btn_diag]
 
     def _busy(self, on, text=None):
         self._is_busy = on
@@ -864,7 +866,23 @@ class App:
             self.mgu_ip.set(car["mgu_ip"])
         if car.get("via") == "hotspot":
             self.gateway.set("hotspot")
+        self._apply_detected_variant(car.get("variant") or {})
         self._refresh()
+
+    def _apply_detected_variant(self, variant):
+        """Imposta da sola la variante quando è certa (ID7); per ID8 lascia
+        scegliere BDC3/BCP all'utente. Non sovrascrive una scelta già fatta."""
+        if not variant or self.arch.get() in ARCHES:
+            return
+        msg = variant.get("en") if _language[0] == "en" else variant.get("it")
+        code = variant.get("code")
+        if code in ARCHES:
+            label = next((lbl for c, lbl in variant_choices() if c == code), None)
+            if label:
+                self.variant_label.set(label)
+                self.arch.set(code)
+        if msg:
+            self._append((T("Riconoscimento: ", "Detected: ")) + msg + "\n")
 
     # --- azioni -----------------------------------------------------------
 
@@ -1185,6 +1203,50 @@ class App:
         self.worker = threading.Thread(target=task, daemon=True)
         self.worker.start()
 
+    def do_diagnose(self):
+        """Legge TUTTO dalla vettura in sola lettura (variante, software, CAFD,
+        seriale, part number, errori) e salva un report. Non modifica nulla."""
+        if self._is_busy:
+            return
+        import diagnose
+        self._busy(True, T("Diagnostica completa in corso (sola lettura)…",
+                           "Full diagnostics running (read only)…"))
+        gw = self.gateway.get().strip() or "auto"
+        mgu_ip = self.mgu_ip.get().strip() or None
+        self._append("\n$ diagnostica (sola lettura)\n")
+
+        def task():
+            try:
+                code, path = diagnose.run(gateway=gw, mgu_ip=mgu_ip, open_folder=False)
+                result = (code, path, None)
+            except Exception as e:  # noqa: BLE001
+                result = (1, None, str(e))
+            self._later(lambda: self._diagnose_done(*result))
+
+        self.worker = threading.Thread(target=task, daemon=True)
+        self.worker.start()
+
+    def _diagnose_done(self, code, path, error):
+        self._busy(False)
+        if error:
+            self._append("ERRORE: %s\n" % error)
+            messagebox.showerror(T("Diagnostica", "Diagnostics"),
+                                 T("Non riuscita:\n%s", "Failed:\n%s") % error)
+            return
+        self._append((T("Report salvato: ", "Report saved: ")) + (path or "?") + "\n")
+        if path:
+            self._open_folder(os.path.dirname(path))
+        if code == 0:
+            messagebox.showinfo(T("Diagnostica completa", "Full diagnostics"),
+                                T("Letto tutto dalla vettura. Il report è in data\\diagnostica\\.\n\n"
+                                  "Puoi inviarmelo: è solo lettura, nessuna modifica all'auto.",
+                                  "Everything read from the car. The report is in data\\diagnostica\\.\n\n"
+                                  "You can send it to me: read-only, no change to the car."))
+        else:
+            messagebox.showwarning(T("Diagnostica", "Diagnostics"),
+                                   T("Collegamento non riuscito: vedi il report in data\\diagnostica\\.",
+                                     "Connection failed: see the report in data\\diagnostica\\."))
+
     def do_store_latest(self, quiet=False):
         """Legge da GitHub le ultime versioni pubblicate di mgu-store (release
         "catalog") e le confronta con quelle lette dalla MGU all'ultimo
@@ -1337,6 +1399,17 @@ def check_program_update(api=UPDATE_API, current=APP_VERSION):
 
 
 def main():
+    if "--diagnostica" in sys.argv:
+        import diagnose
+        gw = "auto"
+        mgu_ip = None
+        for i, a in enumerate(sys.argv):
+            if a == "--gateway" and i + 1 < len(sys.argv):
+                gw = sys.argv[i + 1]
+            if a == "--mgu-ip" and i + 1 < len(sys.argv):
+                mgu_ip = sys.argv[i + 1]
+        code, _path = diagnose.run(gateway=gw, mgu_ip=mgu_ip, open_folder=True)
+        sys.exit(code)
     try:
         root = tk.Tk()
         App(root)

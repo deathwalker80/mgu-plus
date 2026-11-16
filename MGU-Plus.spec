@@ -6,7 +6,8 @@
 # build_exe.bat copies them for you.
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
-hiddenimports = []
+hiddenimports = ["diagnose", "ssh_enable"]
+hiddenimports += collect_submodules("mgu7")
 for pkg in ("cryptography", "cffi"):
     hiddenimports += collect_submodules(pkg)
 

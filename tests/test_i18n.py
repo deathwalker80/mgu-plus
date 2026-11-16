@@ -472,5 +472,47 @@ class LanguageTests(unittest.TestCase):
         self.assertEqual(rows[1], ('Store', '0.9.30', '0.9.33', 'Update available'))
 
 
+class VariantDetectTests(unittest.TestCase):
+    def setUp(self):
+        self.root = gui.tk.Tk(); self.root.withdraw()
+        self.app = gui.App(self.root, auto_check=False)
+
+    def tearDown(self):
+        self.root.destroy()
+
+    def test_id7_is_auto_selected(self):
+        self.assertNotIn(self.app.arch.get(), gui.ARCHES)
+        self.app._apply_detected_variant({'code': 'id7', 'family': 'id7', 'confidence': 'sure',
+                                          'it': 'MGU iDrive 7', 'en': 'MGU iDrive 7'})
+        self.assertEqual(self.app.arch.get(), gui.ID7)
+        self.assertEqual(self.app.variant_label.get(), gui.VARIANT_CHOICES[0][1])
+
+    def test_id8_is_not_auto_picked(self):
+        self.app._apply_detected_variant({'code': None, 'family': 'id8', 'confidence': 'partial',
+                                          'it': 'conferma BDC3/BCP', 'en': 'confirm BDC3/BCP'})
+        self.assertNotIn(self.app.arch.get(), gui.ARCHES)
+
+    def test_a_manual_choice_is_not_overwritten(self):
+        self.app.variant_label.set(gui.VARIANT_CHOICES[1][1])
+        self.app._on_variant(gui.VARIANT_CHOICES[1][1])
+        self.app._apply_detected_variant({'code': 'id7', 'family': 'id7', 'confidence': 'sure',
+                                          'it': 'x', 'en': 'x'})
+        self.assertEqual(self.app.arch.get(), gui.ID8_BDC3)
+
+
+class DiagnoseTests(unittest.TestCase):
+    def test_report_text_has_the_key_sections(self):
+        import diagnose
+        data = {'quando': '2026-11-16 09:00:00 UTC', 'gateway': '169.254.1.1', 'vin': 'TESTVIN',
+                'mgu_ip': ['169.254.9.9'], 'seriale': '0001348065', 'hardware': 'HWEL 00005F32_001.001.004',
+                'cafd': ['CAFD 00003E52_008.010.101'], 'svk': ['BTLD 00003F36_030.004.058'],
+                'ident': {'F190': {'hex': '54455354', 'testo': 'TEST'}}, 'dtc': ['B7F8E5'],
+                'variante': {'it': 'MGU iDrive 7', 'en': 'MGU iDrive 7', 'confidence': 'sure'}}
+        text = diagnose._report_text(data)
+        for part in ('VARIANTE RICONOSCIUTA', 'MGU iDrive 7', 'CAFD', 'TUTTO IL SOFTWARE',
+                     '00003F36_030.004.058', 'Nessuna scrittura'):
+            self.assertIn(part, text)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -4,7 +4,7 @@ REM dist\MGU-Plus-windows-<VERSION>.zip. Run it from the project folder, with Py
 REM PyInstaller works in a temporary folder: at the end only dist\ is left here.
 setlocal
 cd /d "%~dp0"
-set "VERSION=1.3.6"
+set "VERSION=1.3.7"
 set "WORK=%TEMP%\mgu-plus-build"
 
 python -c "import sys" >nul 2>nul || (echo Python not found: install it from python.org, ticking "Add python.exe to PATH", then turn off the python.exe / python3.exe app execution aliases. & goto :err)
@@ -26,6 +26,7 @@ echo === Copying runtime files next to the exe ===
 xcopy /E /I /Y data\assets "dist\MGU-Plus\data\assets" >nul || goto :err
 copy /Y sshd-always-on.sh "dist\MGU-Plus\" >nul || goto :err
 copy /Y LEGGIMI.txt "dist\MGU-Plus\" >nul || goto :err
+copy /Y Diagnostica-Vettura.bat "dist\MGU-Plus\" >nul || goto :err
 copy /Y LICENSE "dist\MGU-Plus\" >nul || goto :err
 
 echo === Packing the zip ===

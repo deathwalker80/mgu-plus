@@ -55,6 +55,47 @@ class Svk:
     def summary(self):
         return ', '.join((str(r) for r in self.records))
 
+ID7_BTLD = '00003F36'          # il bootloader della MGU iDrive 7 (anche ID8 BDC3, per i dati finora)
+
+
+def detect_variant(svk):
+    """Riconosce la variante della head unit dai soli dati letti (SVK), senza
+    sceglierla a mano. Ritorna un dict:
+      code       : 'id7' quando è certo, altrimenti None (ID8/ignoto: lo conferma l'utente)
+      family     : 'id7' | 'id8' | None
+      confidence : 'sure' | 'partial' | 'unknown'
+      it / en    : spiegazione breve
+      software   : 'MMM.mmm.ppp' del bootloader, se letto
+    Regola prudente: il flash con la variante sbagliata può bloccare l'unità,
+    quindi si propone in automatico SOLO ciò che è certo (ID7)."""
+    btld = None
+    for r in svk.records:
+        if r.name == 'BTLD':
+            btld = r
+            break
+    major = btld.trip[0] if btld else None
+    if major is None:
+        swfl = [r for r in svk.records if r.name == 'SWFL']
+        if swfl:
+            major = max(r.trip[0] for r in swfl)
+    sw = btld.trip_text() if btld else None
+    is_known_mgu = any(r.name == 'BTLD' and r.version_hex() == ID7_BTLD for r in svk.records)
+
+    if is_known_mgu and major == 30:
+        return {'code': 'id7', 'family': 'id7', 'confidence': 'sure', 'software': sw,
+                'it': 'MGU iDrive 7 (bootloader %s, software %s): variante impostata in automatico.'
+                      % (ID7_BTLD, sw or '?'),
+                'en': 'MGU iDrive 7 (bootloader %s, software %s): variant set automatically.'
+                      % (ID7_BTLD, sw or '?')}
+    if major == 36:
+        return {'code': None, 'family': 'id8', 'confidence': 'partial', 'software': sw,
+                'it': 'MGU iDrive 8 (software %s): conferma tu se è BDC3 o BCP prima del flash.' % (sw or '?'),
+                'en': 'MGU iDrive 8 (software %s): confirm whether it is BDC3 or BCP before flashing.' % (sw or '?')}
+    return {'code': None, 'family': None, 'confidence': 'unknown', 'software': sw,
+            'it': 'Variante non riconosciuta dai dati: scegli tu il tipo di MGU.',
+            'en': 'Variant not recognised from the data: choose the MGU type yourself.'}
+
+
 def parse_svk(payload):
     if not payload:
         raise DiagError('The SVK response is missing.')

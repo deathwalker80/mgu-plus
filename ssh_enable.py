@@ -527,6 +527,10 @@ class Tool:
         if self.svk is not None:
             car['svk'] = self.svk.summary()
             car['hardware'] = ', '.join(str(r) for r in self.svk.all_named('HWEL')) or None
+            try:
+                car['variant'] = diag.detect_variant(self.svk)
+            except Exception:  # il riconoscimento non deve mai fermare il check
+                car['variant'] = None
         if self.client is not None:
             try:
                 body = preflight._read_did(self.client, hsfz.MGU, 0xF18C)
