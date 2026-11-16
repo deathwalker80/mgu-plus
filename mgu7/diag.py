@@ -56,6 +56,7 @@ class Svk:
         return ', '.join((str(r) for r in self.records))
 
 ID7_BTLD = '00003F36'          # il bootloader della MGU iDrive 7 (anche ID8 BDC3, per i dati finora)
+MGU18_HWEL_PREFIX = '00005F3'  # hardware MGU18 (iDrive 7): visto 00005F31, 00005F32
 
 
 def detect_variant(svk):
@@ -66,31 +67,47 @@ def detect_variant(svk):
       confidence : 'sure' | 'partial' | 'unknown'
       it / en    : spiegazione breve
       software   : 'MMM.mmm.ppp' del bootloader, se letto
-    Regola prudente: il flash con la variante sbagliata può bloccare l'unità,
-    quindi si propone in automatico SOLO ciò che è certo (ID7)."""
+    La variante sceglie l'IMMAGINE di flash, che dipende dall'HARDWARE, non
+    dalla versione software: il flash si basa sul bootloader (BTLD 00003F36) e
+    va su qualsiasi I-Step, vecchio o nuovo. Quindi l'ID7 (hardware MGU18,
+    HWEL 00005F3x) viene riconosciuto per ogni software (026, 030, ...). L'ID8
+    (MGU20/21) non viene scelto da solo: BDC3 vs BCP lo conferma l'utente."""
     btld = None
+    hwel = None
     for r in svk.records:
-        if r.name == 'BTLD':
+        if r.name == 'BTLD' and btld is None:
             btld = r
-            break
+        if r.name == 'HWEL' and hwel is None:
+            hwel = r
     major = btld.trip[0] if btld else None
     if major is None:
         swfl = [r for r in svk.records if r.name == 'SWFL']
         if swfl:
             major = max(r.trip[0] for r in swfl)
     sw = btld.trip_text() if btld else None
+    hwel_hex = hwel.version_hex() if hwel else ''
     is_known_mgu = any(r.name == 'BTLD' and r.version_hex() == ID7_BTLD for r in svk.records)
 
-    if is_known_mgu and major == 30:
+    # MGU18 = iDrive 7: hardware HWEL 00005F3x (visto 00005F31, 00005F32), con
+    # qualsiasi software. È il segnale giusto per l'immagine di flash.
+    if is_known_mgu and hwel_hex.startswith(MGU18_HWEL_PREFIX):
         return {'code': 'id7', 'family': 'id7', 'confidence': 'sure', 'software': sw,
-                'it': 'MGU iDrive 7 (bootloader %s, software %s): variante impostata in automatico.'
-                      % (ID7_BTLD, sw or '?'),
-                'en': 'MGU iDrive 7 (bootloader %s, software %s): variant set automatically.'
-                      % (ID7_BTLD, sw or '?')}
+                'it': 'MGU iDrive 7 (MGU18, hardware %s, software %s): variante impostata in automatico.'
+                      % (hwel_hex, sw or '?'),
+                'en': 'MGU iDrive 7 (MGU18, hardware %s, software %s): variant set automatically.'
+                      % (hwel_hex, sw or '?')}
     if major == 36:
         return {'code': None, 'family': 'id8', 'confidence': 'partial', 'software': sw,
                 'it': 'MGU iDrive 8 (software %s): conferma tu se è BDC3 o BCP prima del flash.' % (sw or '?'),
                 'en': 'MGU iDrive 8 (software %s): confirm whether it is BDC3 or BCP before flashing.' % (sw or '?')}
+    if is_known_mgu:
+        # È una MGU (bootloader giusto) ma l'hardware non è tra quelli noti:
+        # non scelgo l'immagine da solo, la conferma l'utente.
+        return {'code': None, 'family': 'mgu', 'confidence': 'partial', 'software': sw,
+                'it': 'MGU riconosciuta (hardware %s, software %s): conferma tu il tipo prima del flash.'
+                      % (hwel_hex or '?', sw or '?'),
+                'en': 'MGU recognised (hardware %s, software %s): confirm the type before flashing.'
+                      % (hwel_hex or '?', sw or '?')}
     return {'code': None, 'family': None, 'confidence': 'unknown', 'software': sw,
             'it': 'Variante non riconosciuta dai dati: scegli tu il tipo di MGU.',
             'en': 'Variant not recognised from the data: choose the MGU type yourself.'}

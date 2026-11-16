@@ -500,6 +500,43 @@ class VariantDetectTests(unittest.TestCase):
         self.assertEqual(self.app.arch.get(), gui.ID8_BDC3)
 
 
+class DetectVariantUnitTests(unittest.TestCase):
+    def _svk(self, lst):
+        from mgu7 import diag
+        recs = []
+        inv = {v: k for k, v in diag.SVK_TYPES.items()}
+        for item in lst:
+            name, rest = item.split()
+            ver, trip = rest.split('_')
+            a, b, c = (int(x) for x in trip.split('.'))
+            recs.append(diag.SvkRecord(inv[name], int(ver, 16), a, b, c))
+        return diag.Svk(recs)
+
+    def test_mgu18_any_software_is_id7(self):
+        from mgu7 import diag
+        for sw in ('026.006.009', '030.004.058', '033.000.000'):
+            d = diag.detect_variant(self._svk(['HWEL 00005F31_001.001.004', 'BTLD 00003F36_%s' % sw]))
+            self.assertEqual(d['code'], 'id7', sw)
+            self.assertEqual(d['confidence'], 'sure', sw)
+
+    def test_id8_software_36_not_auto(self):
+        from mgu7 import diag
+        d = diag.detect_variant(self._svk(['HWEL 00006000_002.000.000', 'BTLD 00003F36_036.002.000']))
+        self.assertIsNone(d['code'])
+        self.assertEqual(d['family'], 'id8')
+
+    def test_unknown_hardware_mgu_is_not_auto(self):
+        from mgu7 import diag
+        d = diag.detect_variant(self._svk(['HWEL 00007777_001.000.000', 'BTLD 00003F36_028.000.000']))
+        self.assertIsNone(d['code'])
+        self.assertEqual(d['confidence'], 'partial')
+
+    def test_non_mgu_is_unknown(self):
+        from mgu7 import diag
+        d = diag.detect_variant(self._svk(['HWEL 0000AAAA_002.000.000', 'BTLD 00001275_048.000.000']))
+        self.assertEqual(d['confidence'], 'unknown')
+
+
 class DiagnoseTests(unittest.TestCase):
     def test_report_text_has_the_key_sections(self):
         import diagnose

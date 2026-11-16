@@ -1,9 +1,12 @@
 <!-- prerelease -->
-## MGU Plus 1.4.0 (beta, da provare in auto)
+## MGU Plus 1.4.1 (beta, da provare in auto)
 
 Root SSH e App Store (mgu-store) per le head unit BMW MGU iDrive 7, da un PC Windows. In italiano o in inglese, con la stessa grafica di NBT Companion.
 
-**Da scaricare:** `MGU-Plus-windows-1.4.0.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+**Da scaricare:** `MGU-Plus-windows-1.4.1.zip` qui sotto. Scompattalo e avvia `MGU-Plus\MGU-Plus.exe` con "Esegui come amministratore". La guida è in `LEGGIMI.txt`.
+
+### Novità della 1.4.1
+- Riconoscimento automatico esteso ai software più vecchi. La MGU iDrive 7 (hardware MGU18, HWEL 00005F3x) viene riconosciuta e impostata da sola per qualsiasi versione software (026, 030, ...), non più solo 030: il flash si basa sul bootloader (00003F36) e va su ogni I-Step, vecchio o nuovo. L'ID8 e gli hardware non ancora noti restano "da confermare" a mano (sul flash la variante sbagliata è pericolosa).
 
 ### Novità della 1.4.0
 - Controllo della batteria. La tensione 12 V viene letta dalla centralina motore via ENET (OBD 01 42, sola lettura) e mostrata nella pastiglia "Batteria": verde ok, verde "caricabatterie" da 13,2 V, arancione sotto 12,4 V, rosso sotto 12,0 V, grigio se la centralina non risponde.
